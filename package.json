@@ -1,0 +1,21 @@
+{
+  "name": "allex_bankservice",
+  "version": "0.1.0",
+  "description": "BankService",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.hers.rs:allex_services/bank.git"
+  },
+  "keywords": [
+    "ecosystem:allex",
+    "Service",
+    "Bank"
+  ],
+  "author": "HERS Belgrade",
+  "license": "ISC"
+}
+
