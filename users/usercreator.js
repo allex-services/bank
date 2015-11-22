@@ -13,24 +13,24 @@ function createUser(execlib, ParentUser) {
     ParentUser.prototype.__cleanUp.call(this);
   };
 
-  User.prototype.charge = function (username, amount, defer) {
-    this.__service.charge(username, amount).then(
+  User.prototype.charge = function (username, amount, reason, defer) {
+    this.__service.charge(username, amount, reason).then(
       defer.resolve.bind(defer),
       defer.reject.bind(defer),
       defer.notify.bind(defer)
     );
   };
 
-  User.prototype.reserve = function (username, amount, defer) {
-    this.__service.reserve(username, amount).then(
+  User.prototype.reserve = function (username, amount, reason, defer) {
+    this.__service.reserve(username, amount, reason).then(
       defer.resolve.bind(defer),
       defer.reject.bind(defer),
       defer.notify.bind(defer)
     );
   };
 
-  User.prototype.commitReservation = function (reservationid, defer) {
-    this.__service.commitReservation(reservationid).then(
+  User.prototype.commitReservation = function (reservationid, control, defer) {
+    this.__service.commitReservation(reservationid, control).then(
       defer.resolve.bind(defer),
       defer.reject.bind(defer),
       defer.notify.bind(defer)

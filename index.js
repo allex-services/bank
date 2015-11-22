@@ -20,9 +20,14 @@ function createServicePack(execlib) {
   }
 
   function realCreator(defer, leveldblib, bufferlib) {
+    try {
     var ret = require('./clientside')(execlib);
     ret.Service = require('./servicecreator')(execlib, ParentServicePack, leveldblib, bufferlib);
     defer.resolve(ret);
+    } catch(e) {
+      console.error(e.stack);
+      console.error(e);
+    }
   }
 
   return d.promise;
