@@ -94,33 +94,16 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     });
   };
 
-  function decer(amount, record) {
-    console.log('record', record, 'amount', amount);
-    if (!record) {
-      if (amount > 0) {
-        console.log('should I throw?');
-        throw new lib.Error('INSUFFICIENT_FUNDS', null);
-      } else {
-        console.log('returning', [-amount]);
-        return [-amount];
-      }
-    }
-    if (amount > record[0]) {
-      throw new lib.Error('INSUFFICIENT_FUNDS', null);
-    }
-    return [record[0] - amount];
-  }
   function chargeallowance(record, amount) {
-    console.log('chargeallowance?', record, amount);
+    //console.log('chargeallowance?', record, amount);
     if (record && record[0] > amount) {
-      console.log('chargeallowance is ok', record[0], '>', amount);
+      //console.log('chargeallowance is ok', record[0], '>', amount);
       return true;
     }
     throw new lib.Error('INSUFFICIENT_FUNDS', record[0]);
   }
   BankService.prototype.charge = function (username, amount, reason) {
-    //return this.accounts.upsert(username, decer.bind(null, amount)).then(
-    console.log('charge', username, 'for', amount);
+    //console.log('charge', username, 'for', amount);
     var decoptions = {
       defaultrecord: (amount > 0 ? null : [0]),
       criterionfunction: chargeallowance
@@ -176,14 +159,14 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     return q([reservation[0], reservation[1][_SECRET_STRING_INDEX]]);
   }
   BankService.prototype.recordReservation = function (username, amount, reason, result) {
-    console.log('recording reservation', username, amount, reason, result);
+    //console.log('recording reservation', username, amount, reason, result);
     return this.reservations.push([username, amount, reason, Date.now(), secretString()]).then(
       reserver
     );
   };
   
   function transactor(transaction) {
-    console.log('transaction id', transaction, '?');
+    //console.log('transaction id', transaction, '?');
     return q(transaction[0]);
   }
   BankService.prototype.recordTransaction = function (username, amount, reason) {
@@ -191,7 +174,7 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     .then(transactor);
   };
   BankService.prototype.recordTransactionFromReservation = function (controlcode, reservation) {
-    console.log('what should I do with', arguments, 'to recordTransactionFromReservation?');
+    //console.log('what should I do with', arguments, 'to recordTransactionFromReservation?');
     if (controlcode !== reservation[_SECRET_STRING_INDEX]) {
       return q.reject(new lib.Error('WRONG_CONTROL_CODE', controlcode));
     }
