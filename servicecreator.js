@@ -141,6 +141,7 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
   };
 
   BankService.prototype.commitReservation = function (reservationid, controlcode) {
+    //console.log('commitReservation', reservationid, controlcode);
     if (!(lib.isNumber(reservationid) && reservationid>0)) {
       return q.reject(new lib.Error('RESERVATIONID_MUST_BE_A_POSITIVE_NUMBER'));
     }
@@ -181,7 +182,7 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
       return q.reject(new lib.Error('WRONG_CONTROL_CODE', controlcode));
     }
     return this.transactions.push([reservation[0], reservation[1], reservation[2], Date.now()])
-    .then(transactor); 
+    .then(transactor.bind(null,0)); 
   };
   
   return BankService;
