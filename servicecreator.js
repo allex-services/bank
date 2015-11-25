@@ -25,7 +25,6 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     this.reservations = null;
     this.transactions = null;
     child_process.exec('mkdir -p bank', this.onMkDir.bind(this));
-    console.log('new BankService');
     } catch(e) {
       console.error(e.stack);
       console.error(e);
@@ -154,24 +153,27 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
   };
 
 
-  function reserver(reservation) {
+  function reserver(balance, reservation) {
     //console.log('reservation id', reservation, '?');
-    return q([reservation[0], reservation[1][_SECRET_STRING_INDEX]]);
+    return q([reservation[0], reservation[1][_SECRET_STRING_INDEX], balance]);
   }
   BankService.prototype.recordReservation = function (username, amount, reason, result) {
     //console.log('recording reservation', username, amount, reason, result);
+    var balance = result[1][0];
     return this.reservations.push([username, amount, reason, Date.now(), secretString()]).then(
-      reserver
+      reserver.bind(null, balance)
     );
   };
   
-  function transactor(transaction) {
+  function transactor(balance, transaction) {
     //console.log('transaction id', transaction, '?');
-    return q(transaction[0]);
+    return q([transaction[0], balance]);
   }
-  BankService.prototype.recordTransaction = function (username, amount, reason) {
+  BankService.prototype.recordTransaction = function (username, amount, reason, result) {
+    var balance = result[1][0];
+    //console.log('result', result, 'balance', balance);
     return this.transactions.push([username, amount, reason, Date.now()])
-    .then(transactor);
+    .then(transactor.bind(null, balance));
   };
   BankService.prototype.recordTransactionFromReservation = function (controlcode, reservation) {
     //console.log('what should I do with', arguments, 'to recordTransactionFromReservation?');
