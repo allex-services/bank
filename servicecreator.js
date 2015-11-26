@@ -5,6 +5,7 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
   'use strict';
   var lib = execlib.lib,
     q = lib.q,
+    qlib = lib.qlib,
     ParentService = ParentServicePack.Service;
 
   function secretString () {
@@ -24,7 +25,7 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     this.accounts = null;
     this.reservations = null;
     this.transactions = null;
-    this.locks = new leveldb.JobCollection();
+    this.locks = new qlib.JobCollection();
     child_process.exec('mkdir -p bank', this.onMkDir.bind(this));
     } catch(e) {
       console.error(e.stack);
@@ -114,7 +115,7 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     if (!lib.isNumber(amount)) {
       return q.reject(new lib.Error('AMOUNT_MUST_BE_A_NUMBER'));
     }
-    return this.locks.run(username, new leveldb.PromiseChainerJob([
+    return this.locks.run(username, new qlib.PromiseChainerJob([
       this.accounts.dec.bind(this.accounts, username, 0, amount, decoptions),
       this.recordTransaction.bind(this, username, amount, reference)
     ]));
@@ -131,7 +132,7 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
       defaultrecord: function () {throw new lib.Error('NO_ACCOUNT_YET');},
       criterionfunction: chargeallowance
     };
-    return this.locks.run(username, new leveldb.PromiseChainerJob([
+    return this.locks.run(username, new qlib.PromiseChainerJob([
       this.accounts.dec.bind(this.accounts, username, 0, amount, decoptions),
       this.recordReservation.bind(this, username, amount, reference)
     ]));
@@ -145,7 +146,7 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     if (!(controlcode && lib.isString(controlcode))) {
       return q.reject(new lib.Error('CONTROL_CODE_MUST_BE_A_STRING'));
     }
-    var pc = new leveldb.PromiseChainerJob([
+    var pc = new qlib.PromiseChainerJob([
       this.reservations.get.bind(this.reservations, reservationid),
       this.recordTransactionFromReservation.bind(this, controlcode)
     ]),
