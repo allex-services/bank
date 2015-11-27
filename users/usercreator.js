@@ -1,5 +1,9 @@
 function createUser(execlib, ParentUser) {
   'use strict';
+  var lib = execlib.lib,
+    q = lib.q,
+    qlib = lib.qlib;
+
   if (!ParentUser) {
     ParentUser = execlib.execSuite.ServicePack.Service.prototype.userFactory.get('user');
   }
@@ -13,28 +17,20 @@ function createUser(execlib, ParentUser) {
     ParentUser.prototype.__cleanUp.call(this);
   };
 
+  User.prototype.readAccount = function (username, defer) {
+    qlib.promise2defer(this.__service.accounts.get(username), defer);
+  };
+
   User.prototype.charge = function (username, amount, reason, defer) {
-    this.__service.charge(username, amount, reason).then(
-      defer.resolve.bind(defer),
-      defer.reject.bind(defer),
-      defer.notify.bind(defer)
-    );
+    qlib.promise2defer(this.__service.charge(username, amount, reason));
   };
 
   User.prototype.reserve = function (username, amount, reason, defer) {
-    this.__service.reserve(username, amount, reason).then(
-      defer.resolve.bind(defer),
-      defer.reject.bind(defer),
-      defer.notify.bind(defer)
-    );
+    qlib.promise2defer(this.__service.reserve(username, amount, reason), defer);
   };
 
   User.prototype.commitReservation = function (reservationid, control, defer) {
-    this.__service.commitReservation(reservationid, control).then(
-      defer.resolve.bind(defer),
-      defer.reject.bind(defer),
-      defer.notify.bind(defer)
-    );
+    qlib.promise2defer(this.__service.commitReservation(reservationid, control),defer);
   };
 
   return User;

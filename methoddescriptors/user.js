@@ -1,4 +1,9 @@
 module.exports = {
+  readAccount: [{
+    title: 'User name',
+    type: 'string',
+    strongtype: 'String'
+  }],
   charge: [{
     title: 'User name',
     type: 'string',
