@@ -22,7 +22,7 @@ function createUser(execlib, ParentUser) {
   };
 
   User.prototype.charge = function (username, amount, reason, defer) {
-    qlib.promise2defer(this.__service.charge(username, amount, reason));
+    qlib.promise2defer(this.__service.charge(username, amount, reason), defer);
   };
 
   User.prototype.reserve = function (username, amount, reason, defer) {
@@ -30,7 +30,7 @@ function createUser(execlib, ParentUser) {
   };
 
   User.prototype.commitReservation = function (reservationid, control, defer) {
-    qlib.promise2defer(this.__service.commitReservation(reservationid, control),defer);
+    qlib.promise2defer(this.__service.commitReservation(reservationid, control), defer);
   };
 
   return User;
