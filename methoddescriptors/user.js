@@ -14,8 +14,8 @@ module.exports = {
     strongtype: 'Int32LE'
   },{
     title: 'Reference',
-    type: 'string',
-    strongtype: 'String'
+    type: 'array',
+    strongtype: 'Buffer'
   }],
   reserve: [{
     title: 'User name',
@@ -27,8 +27,8 @@ module.exports = {
     strongtype: 'UInt32LE'
   },{
     title: 'Reference',
-    type: 'string',
-    strongtype: 'String'
+    type: 'array',
+    strongtype: 'Buffer'
   }],
   commitReservation: [{
     title: 'Reservation ID',

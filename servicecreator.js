@@ -103,7 +103,7 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     }
     throw new lib.Error('INSUFFICIENT_FUNDS', record[0]);
   }
-  BankService.prototype.charge = function (username, amount, reference) {
+  BankService.prototype.charge = function (username, amount, referencearry) {
     //console.log('charge', username, 'for', amount);
     var decoptions = {
         defaultrecord: (amount > 0 ? null : [0]),
@@ -117,11 +117,11 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     }
     return this.locks.run(username, new qlib.PromiseChainerJob([
       this.accounts.dec.bind(this.accounts, username, 0, amount, decoptions),
-      this.recordTransaction.bind(this, username, amount, reference)
+      this.recordTransaction.bind(this, username, amount, referencearry)
     ]));
   };
 
-  BankService.prototype.reserve = function (username, amount, reference) {
+  BankService.prototype.reserve = function (username, amount, referencearry) {
     if (!username) {
       return q.reject(new lib.Error('NO_USERNAME'));
     }
@@ -134,7 +134,7 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     };
     return this.locks.run(username, new qlib.PromiseChainerJob([
       this.accounts.dec.bind(this.accounts, username, 0, amount, decoptions),
-      this.recordReservation.bind(this, username, amount, reference)
+      this.recordReservation.bind(this, username, amount, referencearry)
     ]));
   };
 
@@ -160,10 +160,12 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     //console.log('reservation id', reservation, '?');
     return q([reservation[0], reservation[1][_SECRET_STRING_INDEX], balance]);
   }
-  BankService.prototype.recordReservation = function (username, amount, reference, result) {
-    //console.log('recording reservation', username, amount, reference, result);
-    var balance = result[1][0];
-    return this.reservations.push([username, amount, reference, Date.now(), secretString()]).then(
+  BankService.prototype.recordReservation = function (username, amount, referencearry, result) {
+    //console.log('recording reservation', username, amount, referencearry, result);
+    var balance = result[1][0], rsrvarry = [username, amount].concat(referencearry);
+    rsrvarry.push(Date.now());
+    rsrvarry.push(secretString());
+    return this.reservations.push(rsrvarry).then(
       reserver.bind(null, balance)
     );
   };
@@ -172,11 +174,12 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     //console.log('transaction id', transaction, '?');
     return q([transaction[0], balance]);
   }
-  BankService.prototype.recordTransaction = function (username, amount, reference, result) {
-    var balance = result[1][0];
+  BankService.prototype.recordTransaction = function (username, amount, referencearry, result) {
+    var balance = result[1][0], tranarry = [username, amount].concat(referencearry);
+    tranarry.push(Date.now());
     //console.log('result', result, 'balance', balance);
-    return this.transactions.push([username, amount, reference, Date.now()])
-    .then(transactor.bind(null, balance));
+    return this.transactions.push(tranarry)
+      .then(transactor.bind(null, balance));
   };
   BankService.prototype.recordTransactionFromReservation = function (controlcode, reservation) {
     //console.log('what should I do with', arguments, 'to recordTransactionFromReservation?');
