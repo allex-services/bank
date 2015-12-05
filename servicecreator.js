@@ -1,5 +1,6 @@
 var child_process = require('child_process'),
-  randomBytes = require('crypto').randomBytes;
+  randomBytes = require('crypto').randomBytes,
+  Path = require('path');
 
 function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
   'use strict';
@@ -20,17 +21,12 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
   }
 
   function BankService(prophash) {
-    try {
     ParentService.call(this, prophash);
     this.accounts = null;
     this.reservations = null;
     this.transactions = null;
     this.locks = new qlib.JobCollection();
-    child_process.exec('mkdir -p bank', this.onMkDir.bind(this));
-    } catch(e) {
-      console.error(e.stack);
-      console.error(e);
-    }
+    child_process.exec('mkdir -p '+prophash.path, this.onMkDir.bind(this, prophash.path));
   }
   
   ParentService.inherit(BankService, factoryCreator);
@@ -56,7 +52,7 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
   };
 
   var _SECRET_STRING_INDEX = 4;
-  BankService.prototype.onMkDir = function (error) {
+  BankService.prototype.onMkDir = function (path, error) {
     if (error) {
       this.close();
       return;
@@ -71,14 +67,15 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
       this.close.bind(this)
     );
     this.accounts = leveldb.createDBHandler({
-      dbname: 'bank/accounts.db',
+      dbname: Path.join(path, 'accounts.db'), //'bank/accounts.db',
       dbcreationoptions: {
         valueEncoding: bufferlib.makeCodec(['UInt32LE'], 'accounts')
       },
       starteddefer: ad
     });
     this.reservations = new (leveldb.DBArray)({
-      dbname: 'bank/reservations.db',
+      dbname: Path.join(path, 'reservations.db'), //'bank/reservations.db',
+      //dbname: 'bank/reservations.db',
       dbcreationoptions: {
         valueEncoding: bufferlib.makeCodec(['String', 'UInt32LE'].concat(this.referenceUserNames).concat(['UInt64LE', 'String']), 'reservations') //username, amount (positive), reference, timestamp, secret (for later commit)
       },
@@ -86,7 +83,8 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
       startfromone: true
     });
     this.transactions = new (leveldb.DBArray)({
-      dbname: 'bank/transactions.db',
+      dbname: Path.join(path, 'transactions.db'), //'bank/transactions.db',
+      //dbname: 'bank/transactions.db',
       dbcreationoptions: {
         valueEncoding: bufferlib.makeCodec(['String', 'Int32LE'].concat(this.referenceUserNames).concat(['UInt64LE']), 'reservations') //username, amount (signed), reference, timestamp
       },
@@ -178,6 +176,7 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     var balance = result[1][0], tranarry = [username, amount].concat(referencearry);
     tranarry.push(Date.now());
     //console.log('result', result, 'balance', balance);
+    //console.log('transactions <=', tranarry, '(referencearry', referencearry, ')');
     return this.transactions.push(tranarry)
       .then(transactor.bind(null, balance));
   };
@@ -190,6 +189,12 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     .then(transactor.bind(null,0)); 
   };
   BankService.prototype.referenceUserNames = ['String'];
+
+  BankService.prototype.propertyHashDescriptor = {
+    path: {
+      type: 'string'
+    }
+  };
   
   return BankService;
 }
