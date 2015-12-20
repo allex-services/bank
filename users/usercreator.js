@@ -18,7 +18,8 @@ function createUser(execlib, ParentUser) {
   };
 
   User.prototype.readAccount = function (username, defer) {
-    qlib.promise2defer(this.__service.accounts.get(username), defer);
+    //qlib.promise2defer(this.__service.accounts.get(username), defer);
+    qlib.promise2defer(this.__service.readAccount(username), defer);
   };
 
   User.prototype.charge = function (username, amount, reason, defer) {

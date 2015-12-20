@@ -93,6 +93,15 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     });
   };
 
+  BankService.prototype.readAccount = function (username) {
+    return this.accounts.get(username);
+  };
+
+  BankService.prototype.readAccountWDefault = function (username, deflt) {
+    console.log('reading account with default', username, deflt);
+    return this.accounts.getWDefault(username, deflt);
+  };
+
   function chargeallowance(record, amount) {
     //console.log('chargeallowance?', record, amount);
     if (record && record[0] >= amount) {
