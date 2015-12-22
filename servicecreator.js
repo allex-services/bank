@@ -98,7 +98,7 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
   };
 
   BankService.prototype.readAccountWDefault = function (username, deflt) {
-    console.log('reading account with default', username, deflt);
+    //console.log('reading account with default', username, deflt);
     return this.accounts.getWDefault(username, deflt);
   };
 
@@ -197,6 +197,16 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     return this.transactions.push([reservation[0], reservation[1], reservation[2], Date.now()])
     .then(transactor.bind(null,0)); 
   };
+
+  BankService.prototype.dumpToConsole = function (options) {
+    console.log('accounts');
+    return this.accounts.dumpToConsole(options).then(
+      qlib.executor(console.log.bind(console, 'transactions'))
+    ).then(
+      qlib.executor(this.transactions.dumpToConsole.bind(this.transactions, options))
+    );
+  };
+
   BankService.prototype.referenceUserNames = ['String'];
 
   BankService.prototype.propertyHashDescriptor = {
