@@ -38,5 +38,17 @@ module.exports = {
     title: 'Reservation control code',
     type: 'string',
     strongtype: 'String'
+  }],
+  traverseAccounts: [{
+    title: 'Traverse options',
+    type: 'object'
+  }],
+  traverseTransactions: [{
+    title: 'Traverse options',
+    type: 'object'
+  }],
+  traverseReservations: [{
+    title: 'Traverse options',
+    type: 'object'
   }]
 };

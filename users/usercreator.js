@@ -1,4 +1,4 @@
-function createUser(execlib, ParentUser) {
+function createUser(execlib, ParentUser, leveldblib) {
   'use strict';
   var lib = execlib.lib,
     q = lib.q,
@@ -10,10 +10,13 @@ function createUser(execlib, ParentUser) {
 
   function User(prophash) {
     ParentUser.call(this, prophash);
+    leveldblib.ServiceUserMixin.call(this);
   }
   
   ParentUser.inherit(User, require('../methoddescriptors/user'), [/*visible state fields here*/]/*or a ctor for StateStream filter*/);
+  leveldblib.ServiceUserMixin.addMethods(User);
   User.prototype.__cleanUp = function () {
+    leveldblib.ServiceUserMixin.__cleanUp.call(this);
     ParentUser.prototype.__cleanUp.call(this);
   };
 
@@ -32,6 +35,19 @@ function createUser(execlib, ParentUser) {
 
   User.prototype.commitReservation = function (reservationid, control, defer) {
     qlib.promise2defer(this.__service.commitReservation(reservationid, control), defer);
+  };
+
+  User.prototype.traverseAccounts = function (options, defer) {
+    console.log('traverseAccounts', options);
+    this.streamLevelDB(this.__service.accounts, options, defer);
+  };
+
+  User.prototype.traverseTransactions = function (options, defer) {
+    this.streamLevelDB(this.__service.transactions, options, defer);
+  };
+
+  User.prototype.traverseReservations = function (options, defer) {
+    this.streamLevelDB(this.__service.reservations, options, defer);
   };
 
   return User;

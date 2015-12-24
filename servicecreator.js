@@ -2,7 +2,7 @@ var child_process = require('child_process'),
   randomBytes = require('crypto').randomBytes,
   Path = require('path');
 
-function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
+function createBankService(execlib, ParentServicePack, leveldblib, bufferlib) {
   'use strict';
   var lib = execlib.lib,
     q = lib.q,
@@ -16,7 +16,7 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
   function factoryCreator(parentFactory) {
     return {
       'service': require('./users/serviceusercreator')(execlib, parentFactory.get('service')),
-      'user': require('./users/usercreator')(execlib, parentFactory.get('user')) 
+      'user': require('./users/usercreator')(execlib, parentFactory.get('user'), leveldblib) 
     };
   }
 
@@ -66,14 +66,14 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
     ).fail(
       this.close.bind(this)
     );
-    this.accounts = leveldb.createDBHandler({
+    this.accounts = leveldblib.createDBHandler({
       dbname: Path.join(path, 'accounts.db'), //'bank/accounts.db',
       dbcreationoptions: {
         valueEncoding: bufferlib.makeCodec(['UInt32LE'], 'accounts')
       },
       starteddefer: ad
     });
-    this.reservations = new (leveldb.DBArray)({
+    this.reservations = new (leveldblib.DBArray)({
       dbname: Path.join(path, 'reservations.db'), //'bank/reservations.db',
       //dbname: 'bank/reservations.db',
       dbcreationoptions: {
@@ -82,7 +82,7 @@ function createBankService(execlib, ParentServicePack, leveldb, bufferlib) {
       starteddefer: rd,
       startfromone: true
     });
-    this.transactions = new (leveldb.DBArray)({
+    this.transactions = new (leveldblib.DBArray)({
       dbname: Path.join(path, 'transactions.db'), //'bank/transactions.db',
       //dbname: 'bank/transactions.db',
       dbcreationoptions: {

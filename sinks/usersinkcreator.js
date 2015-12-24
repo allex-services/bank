@@ -9,6 +9,7 @@ function createUserSink(execlib, ParentSink) {
   }
   
   ParentSink.inherit(UserSink, require('../methoddescriptors/user'));
+  execlib.execSuite.libRegistry.get('allex_leveldblib').enhanceSink(UserSink);
   UserSink.prototype.__cleanUp = function () {
     ParentSink.prototype.__cleanUp.call(this);
   };
