@@ -16,7 +16,7 @@ function createUser(execlib, ParentUser, leveldblib) {
   ParentUser.inherit(User, require('../methoddescriptors/user'), [/*visible state fields here*/]/*or a ctor for StateStream filter*/);
   leveldblib.ServiceUserMixin.addMethods(User);
   User.prototype.__cleanUp = function () {
-    leveldblib.ServiceUserMixin.__cleanUp.call(this);
+    leveldblib.ServiceUserMixin.prototype.__cleanUp.call(this);
     ParentUser.prototype.__cleanUp.call(this);
   };
 
