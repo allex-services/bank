@@ -62,7 +62,7 @@ function createBankService(execlib, ParentServicePack, leveldblib, bufferlib) {
       td = q.defer();
 
     q.allSettled([ad.promise,rd.promise,td.promise]).then(
-      this.readyToAcceptUsersDefer.resolve.bind(this.readyToAcceptUsersDefer, true)
+      this.onBankReady.bind(this)
     ).fail(
       this.close.bind(this)
     );
@@ -91,6 +91,9 @@ function createBankService(execlib, ParentServicePack, leveldblib, bufferlib) {
       starteddefer: td,
       startfromone: true
     });
+  };
+  BankService.prototype.onBankReady = function () {
+    this.readyToAcceptUsersDefer.resolve(true);
   };
 
   BankService.prototype.readAccount = function (username) {
