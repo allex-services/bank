@@ -1,4 +1,4 @@
-function createUserSink(execlib, ParentSink) {
+function createUserSink(execlib, ParentSink, leveldblib) {
   'use strict';
 
   function UserSink(prophash, client) {
@@ -6,7 +6,7 @@ function createUserSink(execlib, ParentSink) {
   }
   
   ParentSink.inherit(UserSink, require('../methoddescriptors/user'));
-  execlib.execSuite.libRegistry.get('allex_leveldblib').enhanceSink(UserSink);
+  leveldblib.enhanceSink(UserSink);
   UserSink.prototype.__cleanUp = function () {
     ParentSink.prototype.__cleanUp.call(this);
   };
