@@ -61,7 +61,7 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
       td = q.defer();
 
     q.allSettled([ad.promise,rd.promise,td.promise]).then(
-      this.onBankReady.bind(this)
+      this.onBankReady.bind(this, path)
     ).fail(
       this.close.bind(this)
     );
@@ -91,7 +91,7 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
       startfromone: true
     });
   };
-  BankService.prototype.onBankReady = function () {
+  BankService.prototype.onBankReady = function (bankdbpath) {
     this.readyToAcceptUsersDefer.resolve(true);
   };
 
