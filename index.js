@@ -1,36 +1,14 @@
 function createServicePack(execlib) {
   'use strict';
-  var lib = execlib.lib,
-    q = lib.q,
-    d = q.defer(),
-    execSuite = execlib.execSuite,
-    libRegistry = execSuite.libRegistry,
-    ParentServicePack = execSuite.registry.get('.');
 
-  libRegistry.register('allex_leveldblib').then(
-    registerBufferLib.bind(null, d),
-    d.reject.bind(d)
-  );
-
-  function registerBufferLib(defer, leveldblib) {
-    libRegistry.register('allex_bufferlib').then(
-      realCreator.bind(null, defer, leveldblib),
-      defer.reject.bind(defer)
-    );
-  }
-
-  function realCreator(defer, leveldblib, bufferlib) {
-    try {
-    var ret = require('./clientside')(execlib);
-    ret.Service = require('./servicecreator')(execlib, ParentServicePack, leveldblib, bufferlib);
-    defer.resolve(ret);
-    } catch(e) {
-      console.error(e.stack);
-      console.error(e);
+  return {
+    service: {
+      dependencies: ['.', 'allex:leveldb:lib', 'allex:buffer:lib']
+    },
+    sinkmap: {
+      dependencies: ['.']
     }
-  }
-
-  return d.promise;
+  };
 }
 
 module.exports = createServicePack;

@@ -1,1 +1,1 @@
-ALLEX.execSuite.registry.add('allex_bankservice',require('./clientside')(ALLEX, ALLEX.execSuite.registry.get('.')));
+ALLEX.execSuite.registry.addClientSide('allex_bankservice',require('./sinkmapcreator')(ALLEX, ALLEX.execSuite.registry.getClientSide('.')));

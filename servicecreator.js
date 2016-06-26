@@ -2,12 +2,11 @@ var child_process = require('child_process'),
   randomBytes = require('crypto').randomBytes,
   Path = require('path');
 
-function createBankService(execlib, ParentServicePack, leveldblib, bufferlib) {
+function createBankService(execlib, ParentService, leveldblib, bufferlib) {
   'use strict';
   var lib = execlib.lib,
     q = lib.q,
-    qlib = lib.qlib,
-    ParentService = ParentServicePack.Service;
+    qlib = lib.qlib;
 
   function secretString () {
     return randomBytes(4).toString('hex');
