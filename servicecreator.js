@@ -115,7 +115,14 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
   BankService.prototype.charge = function (username, amount, referencearry) {
     //console.log('charge', username, 'for', amount);
     var decoptions = {
-        defaultrecord: (amount > 0 ? null : [0]),
+        defaultrecord: function () {
+          if (amount>0) {
+            amount = null;
+            throw new lib.Error('NO_USERNAME');
+          }
+          amount = null;
+          return [0];
+        },
         criterionfunction: chargeallowance
       };
     if (!username) {
