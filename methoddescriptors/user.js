@@ -4,6 +4,11 @@ module.exports = {
     type: 'string',
     strongtype: 'String'
   }],
+  closeAccount: [{
+    title: 'User name',
+    type: 'string',
+    strongtype: 'String'
+  }],
   charge: [{
     title: 'User name',
     type: 'string',
@@ -31,6 +36,19 @@ module.exports = {
     strongtype: 'Buffer'
   }],
   commitReservation: [{
+    title: 'Reservation ID',
+    type: 'number',
+    strongtype: 'UInt32LE'
+  },{
+    title: 'Reservation control code',
+    type: 'string',
+    strongtype: 'String'
+  },{
+    title: 'Reference',
+    type: 'array',
+    strongtype: 'Buffer'
+  }],
+  cancelReservation: [{
     title: 'Reservation ID',
     type: 'number',
     strongtype: 'UInt32LE'

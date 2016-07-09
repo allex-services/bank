@@ -1,5 +1,4 @@
-var child_process = require('child_process'),
-  randomBytes = require('crypto').randomBytes,
+var randomBytes = require('crypto').randomBytes,
   Path = require('path');
 
 function createBankService(execlib, ParentService, leveldblib, bufferlib) {
@@ -25,7 +24,7 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     this.reservations = null;
     this.transactions = null;
     this.locks = new qlib.JobCollection();
-    child_process.exec('mkdir -p '+prophash.path, this.onMkDir.bind(this, prophash.path));
+    this.startDBs(prophash.path);
   }
   
   ParentService.inherit(BankService, factoryCreator);
@@ -50,8 +49,7 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     return false;
   };
 
-  var _SECRET_STRING_INDEX = 4;
-  BankService.prototype.onMkDir = function (path, error) {
+  BankService.prototype.startDBs = function (path, error) {
     if (error) {
       this.close();
       return;
@@ -66,26 +64,24 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
       this.close.bind(this)
     );
     this.accounts = leveldblib.createDBHandler({
-      dbname: Path.join(path, 'accounts.db'), //'bank/accounts.db',
+      dbname: Path.join(path, 'accounts.db'),
       dbcreationoptions: {
         valueEncoding: bufferlib.makeCodec(['UInt32LE'], 'accounts')
       },
       starteddefer: ad
     });
     this.reservations = new (leveldblib.DBArray)({
-      dbname: Path.join(path, 'reservations.db'), //'bank/reservations.db',
-      //dbname: 'bank/reservations.db',
+      dbname: Path.join(path, 'reservations.db'),
       dbcreationoptions: {
-        valueEncoding: bufferlib.makeCodec(['String', 'UInt32LE'].concat(this.referenceUserNames).concat(['UInt64LE', 'String']), 'reservations') //username, amount (positive), reference, timestamp, secret (for later commit)
+        valueEncoding: bufferlib.makeCodec(['String', 'UInt32LE'].concat(this.referenceUserNames).concat(['UInt64LE', 'String']), 'reservations')
       },
       starteddefer: rd,
       startfromone: true
     });
     this.transactions = new (leveldblib.DBArray)({
-      dbname: Path.join(path, 'transactions.db'), //'bank/transactions.db',
-      //dbname: 'bank/transactions.db',
+      dbname: Path.join(path, 'transactions.db'),
       dbcreationoptions: {
-        valueEncoding: bufferlib.makeCodec(['String', 'Int32LE'].concat(this.referenceUserNames).concat(['UInt64LE']), 'reservations') //username, amount (signed), reference, timestamp
+        valueEncoding: bufferlib.makeCodec(['String', 'Int32LE'].concat(this.referenceUserNames).concat(['UInt64LE']), 'reservations')
       },
       starteddefer: td,
       startfromone: true
@@ -102,6 +98,10 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
   BankService.prototype.readAccountWDefault = function (username, deflt) {
     //console.log('reading account with default', username, deflt);
     return this.accounts.getWDefault(username, deflt);
+  };
+
+  BankService.prototype.closeAccount = function (username) {
+    return this.accounts.del(username);
   };
 
   function chargeallowance(record, amount) {
@@ -154,7 +154,7 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     ]));
   };
 
-  BankService.prototype.commitReservation = function (reservationid, controlcode) {
+  BankService.prototype.commitReservation = function (reservationid, controlcode, referencearry) {
     //console.log('commitReservation', reservationid, controlcode);
     if (!(lib.isNumber(reservationid) && reservationid>0)) {
       return q.reject(new lib.Error('RESERVATIONID_MUST_BE_A_POSITIVE_NUMBER'));
@@ -164,7 +164,24 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     }
     var pc = new qlib.PromiseChainerJob([
       this.reservations.get.bind(this.reservations, reservationid),
-      this.recordTransactionFromReservation.bind(this, controlcode)
+      this.recordTransactionFromReservation.bind(this, controlcode, referencearry)
+    ]),
+      pcp = pc.defer.promise;
+    pc.go();
+    return pcp;
+  };
+
+  BankService.prototype.cancelReservation = function (reservationid, controlcode) {
+    //console.log('cancelReservation', reservationid, controlcode);
+    if (!(lib.isNumber(reservationid) && reservationid>0)) {
+      return q.reject(new lib.Error('RESERVATIONID_MUST_BE_A_POSITIVE_NUMBER'));
+    }
+    if (!(controlcode && lib.isString(controlcode))) {
+      return q.reject(new lib.Error('CONTROL_CODE_MUST_BE_A_STRING'));
+    }
+    var pc = new qlib.PromiseChainerJob([
+      this.reservations.get.bind(this.reservations, reservationid),
+      this.returnMoneyFromReservation.bind(this, controlcode)
     ]),
       pcp = pc.defer.promise;
     pc.go();
@@ -173,8 +190,8 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
 
 
   function reserver(balance, reservation) {
-    //console.log('reservation id', reservation, '?');
-    return q([reservation[0], reservation[1][_SECRET_STRING_INDEX], balance]);
+    //console.log('reservation id', reservation, reservation[1], '?');
+    return q([reservation[0], reservation[1][reservation[1].length-1], balance]);
   }
   BankService.prototype.recordReservation = function (username, amount, referencearry, result) {
     //console.log('recording reservation', username, amount, referencearry, result);
@@ -198,12 +215,25 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     return this.transactions.push(tranarry)
       .then(transactor.bind(null, balance));
   };
-  BankService.prototype.recordTransactionFromReservation = function (controlcode, reservation) {
+  BankService.prototype.recordTransactionFromReservation = function (controlcode, referencearry, reservation) {
+    var tranarry;
     //console.log('what should I do with', arguments, 'to recordTransactionFromReservation?');
-    if (controlcode !== reservation[_SECRET_STRING_INDEX]) {
+    if (controlcode !== reservation[reservation.length-1]) {
+      console.error('wrong control code, controlcode', controlcode, 'against', reservation);
       return q.reject(new lib.Error('WRONG_CONTROL_CODE', controlcode));
     }
-    return this.transactions.push([reservation[0], reservation[1], reservation[2], Date.now()])
+    tranarry = [reservation[0], reservation[1]].concat(referencearry);
+    tranarry.push(Date.now());
+    return this.transactions.push(tranarry)
+    .then(transactor.bind(null,0)); 
+  };
+  BankService.prototype.returnMoneyFromReservation = function (controlcode, reservation) {
+    //console.log('what should I do with', arguments, 'to returnMoneyFromReservation?');
+    if (controlcode !== reservation[reservation.length-1]) {
+      console.error('wrong control code, controlcode', controlcode, 'against', reservation);
+      return q.reject(new lib.Error('WRONG_CONTROL_CODE', controlcode));
+    }
+    return this.transactions.push([-reservation[0], reservation[1], reservation[2], Date.now()])
     .then(transactor.bind(null,0)); 
   };
 

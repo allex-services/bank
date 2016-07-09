@@ -25,6 +25,11 @@ function createUser(execlib, ParentUser, leveldblib) {
     qlib.promise2defer(this.__service.readAccount(username), defer);
   };
 
+  User.prototype.closeAccount = function (username, defer) {
+    //qlib.promise2defer(this.__service.accounts.get(username), defer);
+    qlib.promise2defer(this.__service.closeAccount(username), defer);
+  };
+
   User.prototype.charge = function (username, amount, reason, defer) {
     qlib.promise2defer(this.__service.charge(username, amount, reason), defer);
   };
@@ -33,8 +38,12 @@ function createUser(execlib, ParentUser, leveldblib) {
     qlib.promise2defer(this.__service.reserve(username, amount, reason), defer);
   };
 
-  User.prototype.commitReservation = function (reservationid, control, defer) {
-    qlib.promise2defer(this.__service.commitReservation(reservationid, control), defer);
+  User.prototype.commitReservation = function (reservationid, control, reason, defer) {
+    qlib.promise2defer(this.__service.commitReservation(reservationid, control, reason), defer);
+  };
+
+  User.prototype.cancelReservation = function (reservationid, control, defer) {
+    qlib.promise2defer(this.__service.cancelReservation(reservationid, control), defer);
   };
 
   User.prototype.traverseAccounts = function (options, defer) {
