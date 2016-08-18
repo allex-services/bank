@@ -1,26 +1,18 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-ALLEX.execSuite.registry.add('allex_bankservice',require('./clientside')(ALLEX, ALLEX.execSuite.registry.get('.')));
+ALLEX.execSuite.registry.registerClientSide('allex_bankservice',require('./sinkmapcreator')(ALLEX, ALLEX.execSuite.registry.getClientSide('.')));
 
-},{"./clientside":2}],2:[function(require,module,exports){
-function createClientSide(execlib) {
-  'use strict';
-  var execSuite = execlib.execSuite,
-  ParentServicePack = execSuite.registry.get('.');
-
-  return {
-    SinkMap: require('./sinkmapcreator')(execlib, ParentServicePack)
-  };
-}
-
-module.exports = createClientSide;
-
-},{"./sinkmapcreator":5}],3:[function(require,module,exports){
+},{"./sinkmapcreator":4}],2:[function(require,module,exports){
 module.exports = {
 };
 
-},{}],4:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 module.exports = {
   readAccount: [{
+    title: 'User name',
+    type: 'string',
+    strongtype: 'String'
+  }],
+  closeAccount: [{
     title: 'User name',
     type: 'string',
     strongtype: 'String'
@@ -35,8 +27,8 @@ module.exports = {
     strongtype: 'Int32LE'
   },{
     title: 'Reference',
-    type: 'string',
-    strongtype: 'String'
+    type: 'array',
+    strongtype: 'Buffer'
   }],
   reserve: [{
     title: 'User name',
@@ -48,8 +40,8 @@ module.exports = {
     strongtype: 'UInt32LE'
   },{
     title: 'Reference',
-    type: 'string',
-    strongtype: 'String'
+    type: 'array',
+    strongtype: 'Buffer'
   }],
   commitReservation: [{
     title: 'Reservation ID',
@@ -59,27 +51,49 @@ module.exports = {
     title: 'Reservation control code',
     type: 'string',
     strongtype: 'String'
+  },{
+    title: 'Reference',
+    type: 'array',
+    strongtype: 'Buffer'
+  }],
+  cancelReservation: [{
+    title: 'Reservation ID',
+    type: 'number',
+    strongtype: 'UInt32LE'
+  },{
+    title: 'Reservation control code',
+    type: 'string',
+    strongtype: 'String'
+  }],
+  traverseAccounts: [{
+    title: 'Traverse options',
+    type: 'object'
+  }],
+  traverseTransactions: [{
+    title: 'Traverse options',
+    type: 'object'
+  }],
+  traverseReservations: [{
+    title: 'Traverse options',
+    type: 'object'
   }]
 };
 
-},{}],5:[function(require,module,exports){
-function sinkMapCreator(execlib, ParentServicePack) {
+},{}],4:[function(require,module,exports){
+function sinkMapCreator(execlib, ParentSinkMap, leveldblib) {
   'use strict';
-  var sinkmap = new (execlib.lib.Map), ParentSinkMap = ParentServicePack.SinkMap;
+  var sinkmap = new (execlib.lib.Map);
   sinkmap.add('service', require('./sinks/servicesinkcreator')(execlib, ParentSinkMap.get('service')));
-  sinkmap.add('user', require('./sinks/usersinkcreator')(execlib, ParentSinkMap.get('user')));
+  sinkmap.add('user', require('./sinks/usersinkcreator')(execlib, ParentSinkMap.get('user'), leveldblib));
   
   return sinkmap;
 }
 
 module.exports = sinkMapCreator;
 
-},{"./sinks/servicesinkcreator":6,"./sinks/usersinkcreator":7}],6:[function(require,module,exports){
+},{"./sinks/servicesinkcreator":5,"./sinks/usersinkcreator":6}],5:[function(require,module,exports){
 function createServiceSink(execlib, ParentSink) {
   'use strict';
-  if (!ParentSink) {
-    ParentSink = execlib.execSuite.registry.get('.').SinkMap.get('user');
-  }
 
   function ServiceSink(prophash, client) {
     ParentSink.call(this, prophash, client);
@@ -94,18 +108,16 @@ function createServiceSink(execlib, ParentSink) {
 
 module.exports = createServiceSink;
 
-},{"../methoddescriptors/serviceuser":3}],7:[function(require,module,exports){
-function createUserSink(execlib, ParentSink) {
+},{"../methoddescriptors/serviceuser":2}],6:[function(require,module,exports){
+function createUserSink(execlib, ParentSink, leveldblib) {
   'use strict';
-  if (!ParentSink) {
-    ParentSink = execlib.execSuite.registry.get('.').SinkMap.get('user');
-  }
 
   function UserSink(prophash, client) {
     ParentSink.call(this, prophash, client);
   }
   
   ParentSink.inherit(UserSink, require('../methoddescriptors/user'));
+  leveldblib.enhanceSink(UserSink);
   UserSink.prototype.__cleanUp = function () {
     ParentSink.prototype.__cleanUp.call(this);
   };
@@ -114,4 +126,4 @@ function createUserSink(execlib, ParentSink) {
 
 module.exports = createUserSink;
 
-},{"../methoddescriptors/user":4}]},{},[1]);
+},{"../methoddescriptors/user":3}]},{},[1]);
