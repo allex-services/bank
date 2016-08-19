@@ -24,12 +24,17 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     this.reservations = null;
     this.transactions = null;
     this.locks = new qlib.JobCollection();
+    this.accountChanged = new lib.HookCollection();
     this.startDBs(prophash.path);
   }
   
   ParentService.inherit(BankService, factoryCreator);
   
   BankService.prototype.__cleanUp = function() {
+    if (this.accountChanged) {
+      this.accountChanged.destroy();
+    }
+    this.accountChanged = null;
     if (this.transactions) {
       this.transactions.destroy();
     }
@@ -203,9 +208,13 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     );
   };
   
-  function transactor(balance, transaction) {
+  function transactor(bank, balance, transaction) {
     //console.log('transaction id', transaction, '?');
-    return q([transaction[0], balance]);
+    var ret = q([transaction[0], balance]);
+    if (bank && bank.accountChanged) {
+      bank.accountChanged.fire(transaction[1][0], balance);
+    }
+    return ret;
   }
   BankService.prototype.recordTransaction = function (username, amount, referencearry, result) {
     var balance = result[1][0], tranarry = [username, amount].concat(referencearry);
@@ -213,7 +222,7 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     //console.log('result', result, 'balance', balance);
     //console.log('transactions <=', tranarry, '(referencearry', referencearry, ')');
     return this.transactions.push(tranarry)
-      .then(transactor.bind(null, balance));
+      .then(transactor.bind(null, this, balance));
   };
   BankService.prototype.recordTransactionFromReservation = function (controlcode, referencearry, reservation) {
     var tranarry;
@@ -224,8 +233,9 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     }
     tranarry = [reservation[0], reservation[1]].concat(referencearry);
     tranarry.push(Date.now());
+    console.log('transaction from reservation', tranarry, 'balance has go to be somewhere');
     return this.transactions.push(tranarry)
-    .then(transactor.bind(null,0)); 
+    .then(transactor.bind(null,this,0)); 
   };
   BankService.prototype.returnMoneyFromReservation = function (controlcode, reservation) {
     //console.log('what should I do with', arguments, 'to returnMoneyFromReservation?');
@@ -234,7 +244,7 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
       return q.reject(new lib.Error('WRONG_CONTROL_CODE', controlcode));
     }
     return this.transactions.push([-reservation[0], reservation[1], reservation[2], Date.now()])
-    .then(transactor.bind(null,0)); 
+    .then(transactor.bind(null,this,0)); 
   };
 
   BankService.prototype.dumpToConsole = function (options) {
