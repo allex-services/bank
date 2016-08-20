@@ -86,7 +86,7 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     this.transactions = new (leveldblib.DBArray)({
       dbname: Path.join(path, 'transactions.db'),
       dbcreationoptions: {
-        valueEncoding: bufferlib.makeCodec(['String', 'Int32LE'].concat(this.referenceUserNames).concat(['UInt64LE']), 'reservations')
+        valueEncoding: bufferlib.makeCodec(['String', 'Int32LE'].concat(this.referenceUserNames).concat(['UInt64LE']), 'transactions')
       },
       starteddefer: td,
       startfromone: true
@@ -118,6 +118,9 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     throw new lib.Error('INSUFFICIENT_FUNDS', record[0]);
   }
   BankService.prototype.charge = function (username, amount, referencearry) {
+    return this.locks.run(username, this.chargeJob(username, amount, referencearry));
+  };
+  BankService.prototype.chargeJob = function (username, amount, referencearry) {
     //console.log('charge', username, 'for', amount);
     var decoptions = {
         defaultrecord: function () {
@@ -136,10 +139,10 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     if (!lib.isNumber(amount)) {
       return q.reject(new lib.Error('AMOUNT_MUST_BE_A_NUMBER'));
     }
-    return this.locks.run(username, new qlib.PromiseChainerJob([
+    return new qlib.PromiseChainerJob([
       this.accounts.dec.bind(this.accounts, username, 0, amount, decoptions),
       this.recordTransaction.bind(this, username, amount, referencearry)
-    ]));
+    ]);
   };
 
   BankService.prototype.reserve = function (username, amount, referencearry) {
@@ -169,14 +172,14 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     }
     var pc = new qlib.PromiseChainerJob([
       this.reservations.get.bind(this.reservations, reservationid),
-      this.recordTransactionFromReservation.bind(this, controlcode, referencearry)
+      this.voidOutReservationForCommit.bind(this, reservationid, controlcode, referencearry)
     ]),
       pcp = pc.defer.promise;
     pc.go();
     return pcp;
   };
 
-  BankService.prototype.cancelReservation = function (reservationid, controlcode) {
+  BankService.prototype.cancelReservation = function (reservationid, controlcode, referencearry) {
     //console.log('cancelReservation', reservationid, controlcode);
     if (!(lib.isNumber(reservationid) && reservationid>0)) {
       return q.reject(new lib.Error('RESERVATIONID_MUST_BE_A_POSITIVE_NUMBER'));
@@ -186,7 +189,7 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     }
     var pc = new qlib.PromiseChainerJob([
       this.reservations.get.bind(this.reservations, reservationid),
-      this.returnMoneyFromReservation.bind(this, controlcode)
+      this.voidOutReservationForCancel.bind(this, reservationid, controlcode, referencearry)
     ]),
       pcp = pc.defer.promise;
     pc.go();
@@ -224,28 +227,57 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     return this.transactions.push(tranarry)
       .then(transactor.bind(null, this, balance));
   };
-  BankService.prototype.recordTransactionFromReservation = function (controlcode, referencearry, reservation) {
+  BankService.prototype.voidOutReservationForCommit = function (reservationid, controlcode, referencearry, reservation) {
     var tranarry;
-    //console.log('what should I do with', arguments, 'to recordTransactionFromReservation?');
+    //console.log('what should I do with', arguments, 'to voidOutReservationForCommit?');
     if (controlcode !== reservation[reservation.length-1]) {
       console.error('wrong control code, controlcode', controlcode, 'against', reservation);
       return q.reject(new lib.Error('WRONG_CONTROL_CODE', controlcode));
     }
-    tranarry = [reservation[0], reservation[1]].concat(referencearry);
-    tranarry.push(Date.now());
-    console.log('transaction from reservation', tranarry, 'balance has go to be somewhere');
-    return this.transactions.push(tranarry)
-    .then(transactor.bind(null,this,0)); 
+    var username = reservation[0], commitmoney = reservation[1], voidreservation;
+    if (!username) {
+      return q.reject(new lib.Error('NO_USERNAME_IN_RESERVATION'));
+    }
+    voidreservation = reservation.slice();
+    voidreservation[0] = '';
+    voidreservation[1] = 0;
+    return this.reservations.put(reservationid, voidreservation).then(
+      this.onReservationVoidForCommit.bind(this, username, commitmoney, referencearry)
+    );
   };
-  BankService.prototype.returnMoneyFromReservation = function (controlcode, reservation) {
-    //console.log('what should I do with', arguments, 'to returnMoneyFromReservation?');
+  BankService.prototype.onReservationVoidForCommit = function (username, commitmoney, referencearry) {
+    //charge 
+    return this.chargeJob(username, 0, referencearry).go().then(
+      chargeResultEnhancerWithReservationMoney.bind(null, commitmoney)
+    );
+  };
+
+  BankService.prototype.voidOutReservationForCancel = function (reservationid, controlcode, referencearry, reservation) {
     if (controlcode !== reservation[reservation.length-1]) {
       console.error('wrong control code, controlcode', controlcode, 'against', reservation);
       return q.reject(new lib.Error('WRONG_CONTROL_CODE', controlcode));
     }
-    return this.transactions.push([-reservation[0], reservation[1], reservation[2], Date.now()])
-    .then(transactor.bind(null,this,0)); 
+    var username = reservation[0], cancelmoney = reservation[1], voidreservation;
+    if (!username) {
+      return q.reject(new lib.Error('NO_USERNAME_IN_RESERVATION'));
+    }
+    voidreservation = reservation.slice();
+    voidreservation[0] = '';
+    voidreservation[1] = 0;
+    return this.reservations.put(reservationid, voidreservation).then(
+      this.onReservationVoidForCancellation.bind(this, username, cancelmoney, referencearry)
+    );
   };
+  BankService.prototype.onReservationVoidForCancellation = function (username, cancelmoney, referencearry) {
+    //charge 
+    return this.chargeJob(username, -cancelmoney, referencearry).go().then(
+      chargeResultEnhancerWithReservationMoney.bind(null, cancelmoney)
+    );
+  };
+
+  function chargeResultEnhancerWithReservationMoney (money, result) {
+    return q([result[0], result[1], money]);
+  }
 
   BankService.prototype.dumpToConsole = function (options) {
     console.log('accounts');

@@ -56,6 +56,10 @@ module.exports = {
     title: 'Reservation control code',
     type: 'string',
     strongtype: 'String'
+  },{
+    title: 'Reference',
+    type: 'array',
+    strongtype: 'Buffer'
   }],
   traverseAccounts: [{
     title: 'Traverse options',
