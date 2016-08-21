@@ -65,7 +65,7 @@ function createUser(execlib, ParentUser, leveldblib) {
   BankSession.ALL_KEYS = '***';
 
   BankSession.prototype.hook = function (hookobj, defer) {
-    var doscan = hookobj.scan, accountnames = hookobj.accounts, checkforlistener = false, d;
+    var doscan = hookobj.scan, accountnames = hookobj.accounts, checkforlistener = false, d, pser;
     if (!lib.isArray(accountnames)) {
       defer.resolve(true);
     }
@@ -80,11 +80,14 @@ function createUser(execlib, ParentUser, leveldblib) {
     if (checkforlistener) {
       if (doscan) {
         d = q.defer();
+        pser = this.postScan.bind(this, defer, checkforlistener);
         d.promise.then(
-          this.postScan.bind(this, defer, checkforlistener),
-          this.postScan.bind(this, defer, checkforlistener),
+          pser,
+          pser,
           this.onScan.bind(this));
         this.user.traverseAccounts({}, d);
+      } else {
+        this.postScan(defer, checkforlistener);
       }
     }
   };
