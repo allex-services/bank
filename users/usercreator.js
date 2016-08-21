@@ -163,7 +163,7 @@ function createUser(execlib, ParentUser, leveldblib) {
 
   User.prototype.readAccount = function (username, defer) {
     //qlib.promise2defer(this.__service.accounts.get(username), defer);
-    qlib.promise2defer(this.__service.readAccount(username), defer);
+    qlib.promise2defer(this.__service.readAccountSafe(username, [0]), defer);
   };
 
   User.prototype.closeAccount = function (username, defer) {

@@ -105,6 +105,11 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     return this.accounts.getWDefault(username, deflt);
   };
 
+  BankService.prototype.readAccountSafe = function (username, deflt) {
+    //console.log('reading account with default', username, deflt);
+    return this.accounts.safeGet(username, deflt);
+  };
+
   BankService.prototype.closeAccount = function (username) {
     return this.accounts.del(username);
   };
