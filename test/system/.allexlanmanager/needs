@@ -1,0 +1,9 @@
+[
+  {
+    "modulename": "allex_bankservice",
+    "instancename": "Bank",
+    "propertyhash": {
+      "path": "bank.db"
+    }
+  }
+]
