@@ -21,7 +21,7 @@ function createUser(execlib, ParentUser, leveldblib) {
 
   function BankSession (user, session, gate) {
     UserSession.call(this, user, session, gate);
-    HookableUserSessionMixin.call(this, this.user.__service.accounts);
+    HookableUserSessionMixin.call(this, this.user.__service.kvstorage);
     this.addChannel(BankChannel);
   }
 
@@ -49,12 +49,12 @@ function createUser(execlib, ParentUser, leveldblib) {
   };
 
   User.prototype.readAccount = function (username, defer) {
-    //qlib.promise2defer(this.__service.accounts.get(username), defer);
+    //qlib.promise2defer(this.__service.kvstorage.get(username), defer);
     qlib.promise2defer(this.__service.readAccountSafe(username, [0]), defer);
   };
 
   User.prototype.closeAccount = function (username, defer) {
-    //qlib.promise2defer(this.__service.accounts.get(username), defer);
+    //qlib.promise2defer(this.__service.kvstorage.get(username), defer);
     qlib.promise2defer(this.__service.closeAccount(username), defer);
   };
 
@@ -75,11 +75,11 @@ function createUser(execlib, ParentUser, leveldblib) {
   };
 
   User.prototype.traverseAccounts = function (options, defer) {
-    this.streamLevelDB(this.__service.accounts, options, defer);
+    this.streamLevelDB(this.__service.kvstorage, options, defer);
   };
 
   User.prototype.traverseTransactions = function (options, defer) {
-    this.streamLevelDB(this.__service.transactions, options, defer);
+    this.streamLevelDB(this.__service.log, options, defer);
   };
 
   User.prototype.traverseReservations = function (options, defer) {

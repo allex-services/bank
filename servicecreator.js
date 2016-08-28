@@ -1,6 +1,8 @@
 var randomBytes = require('crypto').randomBytes,
   Path = require('path');
 
+  Error.stackTraceLimit = 100;
+
 function createBankService(execlib, ParentService, leveldblib, bufferlib) {
   'use strict';
   var lib = execlib.lib,
@@ -19,58 +21,36 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
   }
 
   function BankService(prophash) {
-    ParentService.call(this, prophash);
-    this.accounts = null;
+    prophash.kvstorage = {
+      dbname: 'accounts.db',
+      dbcreationoptions: {
+        bufferValueEncoding: ['UInt32LE']
+      }
+    };
+    prophash.log = {
+      dbname: 'transactions.db',
+      dbcreationoptions: {
+      }
+    };
     this.reservations = null;
-    this.transactions = null;
-    this.locks = new qlib.JobCollection();
-    this.startDBs(prophash.path);
+    ParentService.call(this, prophash);
   }
   
   ParentService.inherit(BankService, factoryCreator);
   
   BankService.prototype.__cleanUp = function() {
-    if (this.transactions) {
-      this.transactions.destroy();
-    }
-    this.transactions = null;
+    ParentService.prototype.__cleanUp.call(this);
     if (this.reservations) {
       this.reservations.destroy();
     }
     this.reservations = null;
-    if (this.accounts) {
-      this.accounts.destroy();
-    }
-    this.accounts = null;
-    ParentService.prototype.__cleanUp.call(this);
   };
 
-  BankService.prototype.isInitiallyReady = function () {
-    return false;
-  };
+  BankService.prototype.createStartDBPromises = function (path) {
+    var rd = q.defer();
 
-  BankService.prototype.startDBs = function (path, error) {
-    if (error) {
-      this.close();
-      return;
-    }
-    var ad = q.defer(),
-      rd = q.defer(),
-      td = q.defer();
+    this.logopts.dbcreationoptions.bufferValueEncoding = ['String', 'Int32LE'].concat(this.referenceUserNames).concat(['UInt64LE']);
 
-    q.allSettled([ad.promise,rd.promise,td.promise]).then(
-      this.onBankReady.bind(this, path)
-    ).fail(
-      this.close.bind(this)
-    );
-    this.accounts = leveldblib.createDBHandler({
-      dbname: Path.join(path, 'accounts.db'),
-      listenable: true,
-      dbcreationoptions: {
-        valueEncoding: bufferlib.makeCodec(['UInt32LE'], 'accounts')
-      },
-      starteddefer: ad
-    });
     this.reservations = new (leveldblib.DBArray)({
       dbname: Path.join(path, 'reservations.db'),
       dbcreationoptions: {
@@ -79,35 +59,25 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
       starteddefer: rd,
       startfromone: true
     });
-    this.transactions = new (leveldblib.DBArray)({
-      dbname: Path.join(path, 'transactions.db'),
-      dbcreationoptions: {
-        valueEncoding: bufferlib.makeCodec(['String', 'Int32LE'].concat(this.referenceUserNames).concat(['UInt64LE']), 'transactions')
-      },
-      starteddefer: td,
-      startfromone: true
-    });
-  };
-  BankService.prototype.onBankReady = function (bankdbpath) {
-    this.readyToAcceptUsersDefer.resolve(true);
+    return ParentService.prototype.createStartDBPromises.call(this, path).concat([rd.promise]);
   };
 
   BankService.prototype.readAccount = function (username) {
-    return this.accounts.get(username);
+    return this.get(username);
   };
 
   BankService.prototype.readAccountWDefault = function (username, deflt) {
     //console.log('reading account with default', username, deflt);
-    return this.accounts.getWDefault(username, deflt);
+    return this.getWDefault(username, deflt);
   };
 
   BankService.prototype.readAccountSafe = function (username, deflt) {
     //console.log('reading account with default', username, deflt);
-    return this.accounts.safeGet(username, deflt);
+    return this.safeGet(username, deflt);
   };
 
   BankService.prototype.closeAccount = function (username) {
-    return this.accounts.del(username);
+    return this.del(username);
   };
 
   function chargeallowance(record, amount) {
@@ -141,7 +111,7 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
       return q.reject(new lib.Error('AMOUNT_MUST_BE_A_NUMBER'));
     }
     return new qlib.PromiseChainerJob([
-      this.accounts.dec.bind(this.accounts, username, 0, amount, decoptions),
+      this.kvstorage.dec.bind(this.kvstorage, username, 0, amount, decoptions),
       this.recordTransaction.bind(this, username, amount, referencearry)
     ]);
   };
@@ -158,7 +128,7 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
       criterionfunction: chargeallowance
     };
     return this.locks.run(username, new qlib.PromiseChainerJob([
-      this.accounts.dec.bind(this.accounts, username, 0, amount, decoptions),
+      this.kvstorage.dec.bind(this.kvstorage, username, 0, amount, decoptions),
       this.recordReservation.bind(this, username, amount, referencearry)
     ]));
   };
@@ -221,8 +191,8 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     var balance = result[1][0], tranarry = [username, amount].concat(referencearry);
     tranarry.push(Date.now());
     //console.log('result', result, 'balance', balance);
-    //console.log('transactions <=', tranarry, '(referencearry', referencearry, ')');
-    return this.transactions.push(tranarry)
+    //console.log('log <=', tranarry, '(referencearry', referencearry, ')');
+    return this.log.push(tranarry)
       .then(transactor.bind(null, balance));
   };
   BankService.prototype.voidOutReservationForCommit = function (reservationid, controlcode, referencearry, reservation) {
@@ -279,10 +249,10 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
 
   BankService.prototype.dumpToConsole = function (options) {
     console.log('accounts');
-    return this.accounts.dumpToConsole(options).then(
+    return this.kvstorage.dumpToConsole(options).then(
       qlib.executor(console.log.bind(console, 'transactions'))
     ).then(
-      qlib.executor(this.transactions.dumpToConsole.bind(this.transactions, options))
+      qlib.executor(this.log.dumpToConsole.bind(this.log, options))
     );
   };
 
