@@ -22,7 +22,7 @@ function createSimpleAccountHandler(execlib, BankSinkHandler) {
       this.readSelfAccount.bind(this),
       this.charge.bind(this, -1000, ['step 1']),
       this.charge.bind(this, 10, ['step 2']),
-      this.withdrawAll.bind(this)
+      this.withdrawAll.bind(this),
     ])).go();
   };
 

@@ -13,6 +13,7 @@ function createUser(execlib, ParentUser, leveldblib) {
   var UserSession = ParentUser.prototype.getSessionCtor('.'),
     Channel = UserSession.Channel;
 
+  /*
   function BankChannel (usersession){
     Channel.call(this, usersession);
   }
@@ -34,6 +35,7 @@ function createUser(execlib, ParentUser, leveldblib) {
   };
 
   BankSession.Channel = BankChannel;
+  */
 
 
   function User(prophash) {
@@ -86,7 +88,11 @@ function createUser(execlib, ParentUser, leveldblib) {
     this.streamLevelDB(this.__service.reservations, options, defer);
   };
 
-  User.prototype.getSessionCtor = execSuite.userSessionFactoryCreator(BankSession);
+  User.prototype.reset = function (user, defer) {
+    qlib.promise2defer(this.__service.reset(user), defer);
+  };
+
+  //User.prototype.getSessionCtor = execSuite.userSessionFactoryCreator(BankSession);
 
   return User;
 }

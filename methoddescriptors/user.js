@@ -72,5 +72,9 @@ module.exports = {
   traverseReservations: [{
     title: 'Traverse options',
     type: 'object'
+  }],
+  reset: [{
+    title: 'User name',
+    type: 'string'
   }]
 };

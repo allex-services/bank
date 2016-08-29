@@ -46,20 +46,20 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     this.reservations = null;
   };
 
-  BankService.prototype.createStartDBPromises = function (path) {
+  BankService.prototype.createStartDBPromises = function () {
     var rd = q.defer();
 
     this.logopts.dbcreationoptions.bufferValueEncoding = ['String', 'Int32LE'].concat(this.referenceUserNames).concat(['UInt64LE']);
 
     this.reservations = new (leveldblib.DBArray)({
-      dbname: Path.join(path, 'reservations.db'),
+      dbname: Path.join(this.dbdirpath, 'reservations.db'),
       dbcreationoptions: {
         valueEncoding: bufferlib.makeCodec(['String', 'UInt32LE'].concat(this.referenceUserNames).concat(['UInt64LE', 'String']), 'reservations')
       },
       starteddefer: rd,
       startfromone: true
     });
-    return ParentService.prototype.createStartDBPromises.call(this, path).concat([rd.promise]);
+    return ParentService.prototype.createStartDBPromises.call(this).concat([rd.promise]);
   };
 
   BankService.prototype.readAccount = function (username) {
@@ -246,6 +246,85 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
   function chargeResultEnhancerWithReservationMoney (money, result) {
     return q([result[0], result[1], money]);
   }
+
+  BankService.prototype.reset = function (username) {
+    return this.locks.run(username, this.resetJob(username));
+  };
+
+  BankService.prototype.resetJob = function (username) {
+    var resetid = lib.uid();
+    return new qlib.PromiseChainerJob([
+      this.prepareResetLog.bind(this, resetid, username),
+      this.collectUserTxns.bind(this, resetid, username)
+    ]);
+  };
+
+  function collector(collectobj, kvobj) {
+    var txn = kvobj.value, txnmoment = txn[txn.length-1];
+    if (txn[0] === collectobj.username) {
+      collectobj.count ++;
+      collectobj.delbatch.del(kvobj.key);
+      collectobj.writebatch.put(kvobj.key, kvobj.value);
+      if (txnmoment < collectobj.minmoment) {
+        collectobj.minmoment = txnmoment;
+      }
+      if (txnmoment > collectobj.maxmoment) {
+        collectobj.maxmoment = txnmoment;
+      }
+    }
+  };
+
+  BankService.prototype.prepareResetLog = function (resetid, username) {
+    var d = q.defer(), ro = this.logCreateObj(this.logopts, this.dbdirpath);
+    ro.dbname = Path.join(this.dbdirpath, 'resets', resetid);
+    ro.starteddefer = d;
+    new leveldblib.LevelDBHandler(ro);
+    return d.promise;
+  };
+
+  BankService.prototype.collectUserTxns = function (resetid, username, resetdb) {
+    var collectobj = {
+      id: resetid,
+      writebatch: resetdb.db.batch(),
+      delbatch: this.log.db.batch(),
+      username: username,
+      minmoment: Infinity,
+      maxmoment: -Infinity,
+      count: 0
+    },
+     d = q.defer(),
+     rr = this.recordReset.bind(this, d, collectobj),
+     traverser = this.log.traverse(collector.bind(null, collectobj)),
+     ender = function () {
+       if (collectobj.count) {
+         collectobj.delbatch.write(
+           collectobj.writebatch.write.bind(
+             collectobj.writebatch,
+             rr
+           )
+         );
+       }
+       collectobj = null;
+       rr = null;
+     };
+
+    traverser.then(
+      ender,
+      ender
+    );
+    return d.promise;
+  };
+
+  BankService.prototype.recordReset = function (defer, resetobj) {
+    qlib.promise2defer(ParentService.prototype.recordReset.call(this, resetobj.id, resetobj.username, resetobj.minmoment, resetobj.maxmoment, resetobj.count), defer);
+    resetobj.writebatch = null;
+    resetobj.delbatch = null;
+    resetobj.username = null;
+    resetobj.minmoment = null;
+    resetobj.maxmoment = null;
+    resetobj.count = null;
+    defer = null;
+  };
 
   BankService.prototype.dumpToConsole = function (options) {
     console.log('accounts');
