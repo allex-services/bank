@@ -251,6 +251,10 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     return this.locks.run(username, this.resetJob(username));
   };
 
+  BankService.prototype.resetTo = function (username, newbalance, closingreference, openingreference) {
+    return this.locks.run(username, this.resetJob(username));
+  };
+
   BankService.prototype.resetJob = function (username) {
     var resetid = lib.uid();
     return new qlib.PromiseChainerJob([

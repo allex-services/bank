@@ -76,5 +76,18 @@ module.exports = {
   reset: [{
     title: 'User name',
     type: 'string'
+  }],
+  resetTo: [{
+    title: 'User name',
+    type: 'string'
+  },{
+    title: 'New Balance',
+    type: 'integer'
+  },{
+    title: 'Closing Reference',
+    type: 'array'
+  }{
+    title: 'Opening Reference',
+    type: 'array'
   }]
 };

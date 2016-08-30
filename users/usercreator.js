@@ -92,6 +92,10 @@ function createUser(execlib, ParentUser, leveldblib) {
     qlib.promise2defer(this.__service.reset(user), defer);
   };
 
+  User.prototype.resetTo = function (user, newbalance, closingreference, openingreference, defer) {
+    qlib.promise2defer(this.__service.resetTo(user, newbalance, closingreference, openingreference), defer);
+  };
+
   //User.prototype.getSessionCtor = execSuite.userSessionFactoryCreator(BankSession);
 
   return User;
