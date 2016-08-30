@@ -86,7 +86,7 @@ module.exports = {
   },{
     title: 'Closing Reference',
     type: 'array'
-  }{
+  },{
     title: 'Opening Reference',
     type: 'array'
   }]
