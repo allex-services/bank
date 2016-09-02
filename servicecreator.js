@@ -221,6 +221,9 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
   };
 
   BankService.prototype.voidOutReservationForCancel = function (reservationid, controlcode, referencearry, reservation) {
+    if (!reservation) {
+      return q.reject(new lib.Error('NO_RESERVATION'));
+    }
     if (controlcode !== reservation[reservation.length-1]) {
       console.error('wrong control code, controlcode', controlcode, 'against', reservation);
       return q.reject(new lib.Error('WRONG_CONTROL_CODE', controlcode));
