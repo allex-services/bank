@@ -76,6 +76,9 @@ module.exports = {
   reset: [{
     title: 'User name',
     type: 'string'
+  },{
+    title: 'Reset Reference',
+    type: 'array'
   }],
   resetTo: [{
     title: 'User name',
@@ -85,6 +88,9 @@ module.exports = {
     type: 'integer'
   },{
     title: 'Closing Reference',
+    type: 'array'
+  },{
+    title: 'Reset Reference',
     type: 'array'
   },{
     title: 'Opening Reference',

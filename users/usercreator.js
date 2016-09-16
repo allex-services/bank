@@ -52,7 +52,7 @@ function createUser(execlib, ParentUser, leveldblib) {
 
   User.prototype.readAccount = function (username, defer) {
     //qlib.promise2defer(this.__service.kvstorage.get(username), defer);
-    qlib.promise2defer(this.__service.readAccountSafe(username, [0]), defer);
+    qlib.promise2defer(this.__service.readAccountSafe(username, 0), defer);
   };
 
   User.prototype.closeAccount = function (username, defer) {
@@ -88,12 +88,12 @@ function createUser(execlib, ParentUser, leveldblib) {
     this.streamLevelDB(this.__service.reservations, options, defer);
   };
 
-  User.prototype.reset = function (user, defer) {
-    qlib.promise2defer(this.__service.reset(user), defer);
+  User.prototype.reset = function (user, resetreference, defer) {
+    qlib.promise2defer(this.__service.reset(user, resetreference), defer);
   };
 
-  User.prototype.resetTo = function (user, newbalance, closingreference, openingreference, defer) {
-    qlib.promise2defer(this.__service.resetTo(user, newbalance, closingreference, openingreference), defer);
+  User.prototype.resetTo = function (user, newbalance, closingreference, resetreference, openingreference, defer) {
+    qlib.promise2defer(this.__service.resetTo(user, newbalance, closingreference, resetreference, openingreference), defer);
   };
 
   //User.prototype.getSessionCtor = execSuite.userSessionFactoryCreator(BankSession);

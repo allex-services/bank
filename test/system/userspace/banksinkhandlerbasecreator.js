@@ -65,8 +65,14 @@ function createBankSinkHandler (execlib) {
               mismatch = result[e.index] !== _t.balance + e.balance_delta;
               if (!mismatch) {
                 _t.balance += e.balance_delta;
+              } else {
+                console.error("what's the prob with", result[e.index], _t.balance, 'balance_delta', e.balance_delta);
               }
             }
+          }
+        } else {
+          if (exp !== void 0) {
+            mismatch = (result !== exp);
           }
         }
         if (mismatch) {
@@ -96,13 +102,15 @@ function createBankSinkHandler (execlib) {
   };
 
   BankSinkHandler.prototype.storeBalance = function (result) {
-    this.balance = result[0];
+    //console.log('got balance', result);
+    this.balance = result;
     return q(result);
   };
 
   BankSinkHandler.prototype.readSelfAccount = function () {
     return (new qlib.PromiseChainerJob([
-      this.futureExpect(['readAccount', this.username], null),
+      //this.futureExpect(['readAccount', this.username], null),
+      this.futureExpect(['readAccount', this.username]),
       this.storeBalance.bind(this)
     ])).go();
   };
