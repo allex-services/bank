@@ -51,6 +51,7 @@ function createBankSinkHandler (execlib) {
       _cl = null;
       _ce = null;
       _isarr = null;
+      commandwparams = null;
     }
     this.sink.call.apply(this.sink, commandwparams).then(
       function (result) {
@@ -69,6 +70,12 @@ function createBankSinkHandler (execlib) {
                 console.error("what's the prob with", result[e.index], _t.balance, 'balance_delta', e.balance_delta);
               }
             }
+            if (e.hasOwnProperty('new_balance')) {
+              mismatch = result[e.index] !== e.new_balance;
+              if (!mismatch) {
+                _t.balance = e.new_balance; //===result[e.index];
+              }
+            }
           }
         } else {
           if (exp !== void 0) {
@@ -76,7 +83,7 @@ function createBankSinkHandler (execlib) {
           }
         }
         if (mismatch) {
-          _ce('mismatch, got', result, ', expected', exp);
+          _ce('mismatch, got', result, ', expected', exp, 'for', commandwparams);
           _d.reject (new _error('MISMATCH'));
         } else {
           d.resolve(result);
@@ -117,6 +124,10 @@ function createBankSinkHandler (execlib) {
 
   BankSinkHandler.prototype.charge = function (amount, reason) {
     return this.expect(['charge', this.username, amount, reason], [{index:1, balance_delta: -amount}]);
+  };
+
+  BankSinkHandler.prototype.resetTo = function (newbalance, closingreason, resetreason, openingreason) {
+    return this.expect(['resetTo', this.username, newbalance, closingreason, resetreason, openingreason], [{index:1, new_balance: newbalance}]);
   };
 
   BankSinkHandler.prototype.withdrawAll = function () {

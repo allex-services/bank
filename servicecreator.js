@@ -109,17 +109,22 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
           return 0;
         },
         criterionfunction: chargeallowance
-      };
+      },
+      ret;
     if (!username) {
       return [q.reject(new lib.Error('NO_USERNAME'))];
     }
     if (!lib.isNumber(amount)) {
       return [q.reject(new lib.Error('AMOUNT_MUST_BE_A_NUMBER'))];
     }
-    return [
+    ret = [
       this.kvstorage.dec.bind(this.kvstorage, username, null, amount, decoptions),
       this.recordTransaction.bind(this, username, amount, referencearry)
     ];
+    username = null;
+    amount = null;
+    referencearry = null;
+    return ret;
   };
   BankService.prototype.chargeJob = function (username, amount, referencearry) {
     return new qlib.PromiseChainerJob(this.chargeJobTasks(username, amount, referencearry));
@@ -137,7 +142,7 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
       criterionfunction: chargeallowance
     };
     return this.locks.run(username, new qlib.PromiseChainerJob([
-      this.kvstorage.dec.bind(this.kvstorage, username, 0, amount, decoptions),
+      this.kvstorage.dec.bind(this.kvstorage, username, null, amount, decoptions),
       this.recordReservation.bind(this, username, amount, referencearry)
     ]));
   };
@@ -186,6 +191,10 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     var balance = result[1], rsrvarry = [username, amount].concat(referencearry);
     rsrvarry.push(Date.now());
     rsrvarry.push(secretString());
+    username = null;
+    amount = null;
+    referencearry = null;
+    result = null;
     return this.reservations.push(rsrvarry).then(
       reserver.bind(null, balance)
     );
@@ -197,12 +206,16 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     return ret;
   }
   BankService.prototype.recordTransaction = function (username, amount, referencearry, result) {
-    var balance = result[1], tranarry = [username, -amount].concat(referencearry);
+    var balance = result[1], tranarry = [username, -amount].concat(referencearry), ret;
     tranarry.push(Date.now());
     //console.log('result', result, 'balance', balance);
     //console.log('log <=', tranarry, '(referencearry', referencearry, ')');
-    return this.log.push(tranarry)
+    ret = this.log.push(tranarry)
       .then(transactor.bind(null, balance));
+    username = null;
+    amount = null;
+    referencearry = null;
+    return ret;
   };
   BankService.prototype.voidOutReservationForCommit = function (reservationid, controlcode, referencearry, reservation) {
     var tranarry;
@@ -250,9 +263,13 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
   };
   BankService.prototype.onReservationVoidForCancellation = function (username, cancelmoney, referencearry) {
     //charge 
-    return this.chargeJob(username, -cancelmoney, referencearry).go().then(
+    var ret = this.chargeJob(username, -cancelmoney, referencearry).go().then(
       chargeResultEnhancerWithReservationMoney.bind(null, cancelmoney)
     );
+    username = null;
+    cancelmoney = null;
+    referencearry = null;
+    return ret;
   };
 
   function chargeResultEnhancerWithReservationMoney (money, result) {
@@ -269,31 +286,19 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
 
 
   BankService.prototype.resetJobTasks = function (username, resetreference) {
-    var resetid = lib.uid();
-    return [
-      this.prepareResetLog.bind(this, resetid, username),
-      this.collectUserTxns.bind(this, resetid, username),
-      this.writeInitialTransactionAfterReset.bind(this, username, resetreference)
-    ];
+    var resetid = lib.uid(),
+      ret = [
+        this.prepareResetLog.bind(this, resetid, username),
+        this.collectUserTxns.bind(this, resetid, username),
+        this.writeInitialTransactionAfterReset.bind(this, username, resetreference)
+      ];
+    username = null;
+    resetreference = null;
+    return ret;
   };
 
   BankService.prototype.resetJob = function (username, resetreference) {
     return new qlib.PromiseChainerJob(this.resetJobTasks(username, resetreference));
-  };
-
-  BankService.prototype.resetToJobTasks = function (username, newbalance, closingreference, resetreference, openingreference) {
-    var promiseproviders = [
-      this.readAccount.bind(this, username),
-      this.chargeAccountForResetTo.bind(this, username, closingreference)
-    ];
-    promiseproviders.push.apply(promiseproviders, this.resetJobTasks(username, resetreference));
-    promiseproviders.push.apply(promiseproviders, this.chargeJobTasks(username, -newbalance, openingreference));
-    promiseproviders.push(qlib.returner(true));
-    return promiseproviders;
-  };
-
-  BankService.prototype.resetToJob = function (username, newbalance, closingreference, resetreference, openingreference) {
-    return new qlib.PromiseChainerJob(this.resetToJobTasks(username, newbalance, closingreference, resetreference, openingreference));
   };
 
   function collector(collectobj, kvobj) {
@@ -308,16 +313,6 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
       if (txnmoment > collectobj.maxmoment) {
         collectobj.maxmoment = txnmoment;
       }
-    }
-  };
-
-  BankService.prototype.chargeAccountForResetTo = function (username, closingreference, balance) {
-    if (balance) {
-      return (this.chargeJob(username, balance, closingreference)).go().then(
-        qlib.returner(true)
-      );
-    } else {
-      return q(true);
     }
   };
 
@@ -400,6 +395,8 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
       type: 'string'
     }
   };
+
+  require('./resettoextensioncreator')(execlib, BankService);
   
   return BankService;
 }
