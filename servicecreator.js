@@ -327,6 +327,7 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
   BankService.prototype.collectUserTxns = function (resetid, username, resetdb) {
     var collectobj = {
       id: resetid,
+      db: resetdb,
       writebatch: resetdb.db.batch(),
       delbatch: this.log.db.batch(),
       username: username,
@@ -369,7 +370,10 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
   };
 
   BankService.prototype.recordReset = function (defer, resetobj) {
+    resetobj.db.destroy();
     qlib.promise2defer(ParentService.prototype.recordReset.call(this, resetobj.id, resetobj.username, resetobj.minmoment, resetobj.maxmoment, resetobj.count), defer);
+    resetobj.id = null;
+    resetobj.db = null;
     resetobj.writebatch = null;
     resetobj.delbatch = null;
     resetobj.username = null;
