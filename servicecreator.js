@@ -157,7 +157,24 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     }
     var pc = new qlib.PromiseChainerJob([
       this.reservations.get.bind(this.reservations, reservationid),
-      this.voidOutReservationForCommit.bind(this, reservationid, controlcode, referencearry)
+      this.voidOutReservationForCommit.bind(this, reservationid, controlcode, null, referencearry)
+    ]),
+      pcp = pc.defer.promise;
+    pc.go();
+    return pcp;
+  };
+
+  BankService.prototype.partiallyCommitReservation = function (reservationid, controlcode, commitamount, referencearry) {
+    //console.log('partiallyCommitReservation', reservationid, controlcode, commitamount);
+    if (!(lib.isNumber(reservationid) && reservationid>0)) {
+      return q.reject(new lib.Error('RESERVATIONID_MUST_BE_A_POSITIVE_NUMBER'));
+    }
+    if (!(controlcode && lib.isString(controlcode))) {
+      return q.reject(new lib.Error('CONTROL_CODE_MUST_BE_A_STRING'));
+    }
+    var pc = new qlib.PromiseChainerJob([
+      this.reservations.get.bind(this.reservations, reservationid),
+      this.voidOutReservationForCommit.bind(this, reservationid, controlcode, commitamount, referencearry)
     ]),
       pcp = pc.defer.promise;
     pc.go();
@@ -217,14 +234,19 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     referencearry = null;
     return ret;
   };
-  BankService.prototype.voidOutReservationForCommit = function (reservationid, controlcode, referencearry, reservation) {
+  BankService.prototype.voidOutReservationForCommit = function (reservationid, controlcode, commitamount, referencearry, reservation) {
     var tranarry;
     //console.log('what should I do with', arguments, 'to voidOutReservationForCommit?');
     if (controlcode !== reservation[reservation.length-1]) {
       console.error('wrong control code, controlcode', controlcode, 'against', reservation);
       return q.reject(new lib.Error('WRONG_CONTROL_CODE', controlcode));
     }
-    var username = reservation[0], commitmoney = reservation[1], voidreservation;
+    var username = reservation[0], commitmoney = reservation[1], voidreservation, chargeamount;
+    if (commitamount !== null) {
+      chargeamount = commitmoney-commitamount;
+    } else {
+      chargeamount = 0;
+    }
     if (!username) {
       return q.reject(new lib.Error('NO_USERNAME_IN_RESERVATION'));
     }
@@ -232,12 +254,12 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     voidreservation[0] = '';
     voidreservation[1] = 0;
     return this.reservations.put(reservationid, voidreservation).then(
-      this.onReservationVoidForCommit.bind(this, username, commitmoney, referencearry)
+      this.onReservationVoidForCommit.bind(this, username, commitmoney, -chargeamount, referencearry)
     );
   };
-  BankService.prototype.onReservationVoidForCommit = function (username, commitmoney, referencearry) {
+  BankService.prototype.onReservationVoidForCommit = function (username, commitmoney, chargeamount, referencearry) {
     //charge 
-    return this.chargeJob(username, 0, referencearry).go().then(
+    return this.chargeJob(username, chargeamount, referencearry).go().then(
       chargeResultEnhancerWithReservationMoney.bind(null, commitmoney)
     );
   };

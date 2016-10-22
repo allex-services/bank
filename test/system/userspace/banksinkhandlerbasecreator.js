@@ -126,6 +126,19 @@ function createBankSinkHandler (execlib) {
     return this.expect(['charge', this.username, amount, reason], [{index:1, balance_delta: -amount}]);
   };
 
+  BankSinkHandler.prototype.reserve = function (amount, reason) {
+    return this.expect(['reserve', this.username, amount, reason], [{index:2, balance_delta: -amount}]);
+  };
+
+  BankSinkHandler.prototype.commitReservation = function (reservationid, control, reason) {
+    return this.expect(['commitReservation', reservationid, control, reason], [{index:1, value: this.balance}]);
+  };
+
+  BankSinkHandler.prototype.partiallyCommitReservation = function (reservationid, control, commitamount, reason, expectednewbalance) {
+    console.log('partiallyCommitReservation', reservationid, control, commitamount, reason);
+    return this.expect(['partiallyCommitReservation', reservationid, control, commitamount, reason], [{index:1, new_balance: expectednewbalance}]);
+  };
+
   BankSinkHandler.prototype.resetTo = function (newbalance, closingreason, resetreason, openingreason) {
     return this.expect(['resetTo', this.username, newbalance, closingreason, resetreason, openingreason], [{index:1, new_balance: newbalance}]);
   };

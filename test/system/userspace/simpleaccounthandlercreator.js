@@ -7,6 +7,7 @@ function createSimpleAccountHandler(execlib, BankSinkHandler) {
 
   function SimpleAccountHandler(sink, username) {
     BankSinkHandler.call(this, sink, username);
+    this.reservation = null;
   }
   lib.inherit(SimpleAccountHandler, BankSinkHandler);
 
@@ -22,8 +23,46 @@ function createSimpleAccountHandler(execlib, BankSinkHandler) {
       this.readSelfAccount.bind(this),
       this.charge.bind(this, -1000, ['step 1']),
       this.charge.bind(this, 10, ['step 2']),
+      this.reserve.bind(this, 30, ['step 3']),
+      this.commitReservation.bind(this, null, ['step 4']),
+      this.reserve.bind(this, 30, ['step 3']),
+      this.commitReservation.bind(this, 10, ['step 4']),
       this.withdrawAll.bind(this),
     ])).go();
+  };
+
+  SimpleAccountHandler.prototype.reserve = function (amount, reason) {
+    if (this.reservation) {
+      return q.reject(new lib.Error('ALREADY_HAVE_RESERVATION', 'Already have reservation'));
+    }
+    this.reservation = {
+      reservedamount: amount,
+      result: null
+    };
+    var p = BankSinkHandler.prototype.reserve.call(this, amount, reason);
+    p.then(this.onReservation.bind(this));
+    return p;
+  };
+
+  SimpleAccountHandler.prototype.onReservation = function (reservationresult) {
+    this.reservation.result = reservationresult;
+  };
+
+  SimpleAccountHandler.prototype.commitReservation = function (amount, reason) {
+    var reservation, result;
+    if (!this.reservation) {
+      return q.reject(new lib.Error('NO_RESERVATION_TO_COMMIT', 'No reservation to commit'));
+    }
+    reservation = this.reservation;
+    result = reservation.result;
+    this.reservation = null;
+    if (amount) {
+      console.log('current balance', this.balance, 'commit amount', amount, 'original reservation', reservation, 'expecting new balance', this.balance+(reservation.reservedamount-amount));
+      return BankSinkHandler.prototype.partiallyCommitReservation.call(this, result[0], result[1], amount, reason, this.balance+(reservation.reservedamount-amount));
+    } else {
+      console.log('original reservation', reservation, 'expecting balance', this.balance, 'to remain unchanged');
+      return BankSinkHandler.prototype.commitReservation.call(this, result[0], result[1], reason);
+    }
   };
 
   return SimpleAccountHandler;

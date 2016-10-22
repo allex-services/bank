@@ -72,6 +72,10 @@ function createUser(execlib, ParentUser, leveldblib) {
     qlib.promise2defer(this.__service.commitReservation(reservationid, control, reason), defer);
   };
 
+  User.prototype.partiallyCommitReservation = function (reservationid, control, commitamount, reason, defer) {
+    qlib.promise2defer(this.__service.partiallyCommitReservation(reservationid, control, commitamount, reason), defer);
+  };
+
   User.prototype.cancelReservation = function (reservationid, control, reason, defer) {
     qlib.promise2defer(this.__service.cancelReservation(reservationid, control, reason), defer);
   };
