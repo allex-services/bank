@@ -24,7 +24,7 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
     prophash.kvstorage = {
       dbname: 'accounts.db',
       dbcreationoptions: {
-        leveldbValueEncoding: 'Int64Codec'
+        leveldbValueEncoding: 'UInt48BECodec'
       }
     };
     prophash.log = {
@@ -49,12 +49,12 @@ function createBankService(execlib, ParentService, leveldblib, bufferlib) {
   BankService.prototype.createStartDBPromises = function () {
     var rd = q.defer();
 
-    this.logopts.dbcreationoptions.bufferValueEncoding = ['String', 'Int32LE'].concat(this.referenceUserNames).concat(['UInt64LE']);
+    this.logopts.dbcreationoptions.bufferValueEncoding = ['String', 'Int48LE'].concat(this.referenceUserNames).concat(['UInt48LE']);
 
     this.reservations = new (leveldblib.DBArray)({
       dbname: Path.join(this.dbdirpath, 'reservations.db'),
       dbcreationoptions: {
-        valueEncoding: bufferlib.makeCodec(['String', 'UInt32LE'].concat(this.referenceUserNames).concat(['UInt64LE', 'String']), 'reservations')
+        valueEncoding: bufferlib.makeCodec(['String', 'UInt32LE'].concat(this.referenceUserNames).concat(['UInt48LE', 'String']), 'reservations')
       },
       starteddefer: rd,
       startfromone: true
