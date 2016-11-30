@@ -3,7 +3,7 @@ function createServicePack(execlib) {
 
   return {
     service: {
-      dependencies: ['allex:leveldbwithlog', 'allex:leveldb:lib', 'allex:buffer:lib']
+      dependencies: ['allex:leveldbwithlog', 'allex:leveldbbank:lib', 'allex:leveldb:lib']
     },
     sinkmap: {
       dependencies: ['allex:leveldbwithlog']

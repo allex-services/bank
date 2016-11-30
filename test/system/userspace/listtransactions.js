@@ -1,6 +1,7 @@
 var _users;
 
 function txnprocessor (txnobj) {
+  console.log('txnobj', txnobj);
   var txn = txnobj.value,
     user = txn[0],
     amount = txn[1],
@@ -13,7 +14,6 @@ function txnprocessor (txnobj) {
 }
 
 function run(taskobj, leveldblib) {
-  console.log('leveldblib', leveldblib);
   leveldblib.streamInSink(taskobj.sink,
     'traverseTransactions', 
     {pagesize: 5},
@@ -28,7 +28,6 @@ function go (taskobj) {
   if (!(taskobj && taskobj.sink)) {
     process.exit(0);
   }
-  console.log(taskobj.execlib.lib);
   _users = new taskobj.execlib.lib.Map();
   taskobj.execlib.loadDependencies('client', ['allex:leveldb:lib'], run.bind(null, taskobj));
 }

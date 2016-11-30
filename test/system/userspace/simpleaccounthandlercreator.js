@@ -21,12 +21,12 @@ function createSimpleAccountHandler(execlib, BankSinkHandler) {
     }
     return (new qlib.PromiseChainerJob([
       this.readSelfAccount.bind(this),
-      this.charge.bind(this, -1000, ['step 1']),
-      this.charge.bind(this, 10, ['step 2']),
-      this.reserve.bind(this, 30, ['step 3']),
-      this.commitReservation.bind(this, null, ['step 4']),
-      this.reserve.bind(this, 30, ['step 3']),
-      this.commitReservation.bind(this, 10, ['step 4']),
+      this.charge.bind(this, -1000, ['fill 1000']),
+      this.charge.bind(this, 10, ['take 10']),
+      this.reserve.bind(this, 30, ['reserve 30']),
+      this.commitReservation.bind(this, null, ['commit reserve 30']),
+      this.reserve.bind(this, 50, ['reserve 50']),
+      this.commitReservation.bind(this, 10, ['partially commit for 10']),
       this.withdrawAll.bind(this),
     ])).go();
   };

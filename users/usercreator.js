@@ -3,8 +3,7 @@ function createUser(execlib, ParentUser, leveldblib) {
   var lib = execlib.lib,
     q = lib.q,
     qlib = lib.qlib,
-    execSuite = execlib.execSuite,
-    HookableUserSessionMixin = leveldblib.HookableUserSessionMixin;
+    execSuite = execlib.execSuite;
 
   if (!ParentUser) {
     ParentUser = execSuite.ServicePack.Service.prototype.userFactory.get('user');
@@ -13,40 +12,15 @@ function createUser(execlib, ParentUser, leveldblib) {
   var UserSession = ParentUser.prototype.getSessionCtor('.'),
     Channel = UserSession.Channel;
 
-  /*
-  function BankChannel (usersession){
-    Channel.call(this, usersession);
-  }
-  lib.inherit(BankChannel, Channel);
-  BankChannel.prototype.name = 'l';
-
-  function BankSession (user, session, gate) {
-    UserSession.call(this, user, session, gate);
-    HookableUserSessionMixin.call(this, this.user.__service.kvstorage);
-    this.addChannel(BankChannel);
-  }
-
-  UserSession.inherit(BankSession, HookableUserSessionMixin.__methodDescriptors);
-  HookableUserSessionMixin.addMethods(BankSession);
-
-  BankSession.prototype.__cleanUp = function () {
-    HookableUserSessionMixin.prototype.destroy.call(this);
-    UserSession.prototype.__cleanUp.call(this);
-  };
-
-  BankSession.Channel = BankChannel;
-  */
-
-
   function User(prophash) {
     ParentUser.call(this, prophash);
-    leveldblib.ServiceUserMixin.call(this);
+    //leveldblib.ServiceUserMixin.call(this);
   }
   
   ParentUser.inherit(User, require('../methoddescriptors/user'), [/*visible state fields here*/]/*or a ctor for StateStream filter*/);
-  leveldblib.ServiceUserMixin.addMethods(User);
+  //leveldblib.ServiceUserMixin.addMethods(User);
   User.prototype.__cleanUp = function () {
-    leveldblib.ServiceUserMixin.prototype.__cleanUp.call(this);
+    //leveldblib.ServiceUserMixin.prototype.__cleanUp.call(this);
     ParentUser.prototype.__cleanUp.call(this);
   };
 
