@@ -32,10 +32,15 @@ function go (taskobj) {
 }
 
 
-module.exports = {
-  sinkname: 'Bank',
-  identity: {name: 'user', role: 'user'},
-  task: {
-    name: go
-  }
-};
+describe('Test simple bank ops', function () {
+  findSinkIt({
+    sinkname: 'Bank',
+    identity: {name: 'user', role: 'user'},
+  });
+  it('doing ops', function () {
+    this.timeout(1e8);
+    var simpletester = require('./sequencetestercreator')(execlib, 'simpleaccounthandlercreator', 'SimpleHandler'),
+      starterwithresettotester = require('./sequencetestercreator')(execlib, 'starterwithresettohandlercreator', 'StarterWithResetTo');
+    run (simpletester, starterwithresettotester, Bank);
+  });
+});
