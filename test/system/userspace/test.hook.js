@@ -9,4 +9,14 @@ describe('Testing hook', function () {
   it('Charge auser', function () {
     return Bank.call('charge', 'auser', -10, ['another charge']);
   });
+  it('Hook to bank txns', function () {
+    Bank.consumeChannel('g', console.log.bind(console, 'txn'));
+    return Bank.sessionCall('hookTolog', {filter: {
+      values: {
+        op: 'eq',
+        field: 0,
+        value: 'auser'
+      }
+    }, scan: true});
+  });
 });
