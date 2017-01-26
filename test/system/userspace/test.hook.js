@@ -11,7 +11,7 @@ describe('Testing hook', function () {
   });
   it('Hook to bank txns', function () {
     Bank.consumeChannel('g', console.log.bind(console, 'txn'));
-    return Bank.sessionCall('hookTolog', {filter: {
+    return Bank.sessionCall('hookToLog', {filter: {
       values: {
         op: 'eq',
         field: 0,
