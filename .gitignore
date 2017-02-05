@@ -2,3 +2,4 @@ node_modules/*
 *.swp
 *.swo
 test/system/bank.db
+allexmaster.pid
