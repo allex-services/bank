@@ -1,40 +1,37 @@
-function doQuery (sink, methodname, filters) {
-  var d = q.defer(), ret = d.promise;
-  taskRegistry.run('queryLevelDB', {
-    queryMethodName: methodname,
-    sink: sink,
-    filter: filters,
-    scanInitially: true,
-    onPut: console.log.bind(console, 'qput'),
-    onDel: console.log.bind(console, 'qdel'),
-    onInit: d.resolve.bind(d)
-  });
-  return ret;
-}
+loadMochaIntegration('allex_leveldblib');
 describe('Testing query', function () {
   loadClientSide(['allex:leveldb:lib']);
   findSinkIt({
     sinkname: 'Bank'
   });
-  it('Query bank', function () {
-    return doQuery(Bank, 'query', {
-      values: {
+  createSinkLevelDBQueryIt({
+    instancename: 'QueryBank',
+    sinkname: 'Bank',
+    scaninitially: true,
+    filter: {
+      keys: {
         op: 'eq',
         field: null,
         value: 'auser'
       }
-    });
+    },
+    cb: console.log.bind(console, 'bank query')
   });
-  it('Charge auser', function () {
-    return Bank.call('charge', 'auser', -10, ['another charge']);
-  });
-  it('Query bank txns', function () {
-    return doQuery(Bank, 'queryLog', {
+  createSinkLevelDBQueryIt({
+    instancename: 'QueryTxns',
+    sinkname: 'Bank',
+    methodname: 'queryLog',
+    scaninitially: false,
+    filter: {
       values: {
         op: 'startswith',
         field: 0,
         value: 'aus'
       }
-    });
+    },
+    cb: console.log.bind(console, 'txn query')
+  });
+  it('Charge auser', function () {
+    return Bank.call('charge', 'auser', -10, ['another charge']);
   });
 });

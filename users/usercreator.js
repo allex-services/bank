@@ -9,8 +9,7 @@ function createUser(execlib, ParentUser, leveldblib) {
     ParentUser = execSuite.ServicePack.Service.prototype.userFactory.get('user');
   }
 
-  var UserSession = ParentUser.prototype.getSessionCtor('.'),
-    Channel = UserSession.Channel;
+  var UserSession = ParentUser.prototype.getSessionCtor('.');
 
   function User(prophash) {
     ParentUser.call(this, prophash);
