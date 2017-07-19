@@ -29,7 +29,7 @@ function go (taskobj) {
     process.exit(0);
   }
   _users = new taskobj.execlib.lib.Map();
-  taskobj.execlib.loadDependencies('client', ['allex:leveldb:lib'], run.bind(null, taskobj));
+  taskobj.execlib.loadDependencies('client', ['allex_leveldblib'], run.bind(null, taskobj));
 }
 
 module.exports = {

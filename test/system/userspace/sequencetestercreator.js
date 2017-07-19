@@ -24,7 +24,7 @@ function testTxns (execlib, sink) {
         _sink = null;
         _runTest = null;
       };
-  return execlib.loadDependencies('client', ['allex:leveldb:lib'], txnTesterLoader).then(testRunner);
+  return execlib.loadDependencies('client', ['allex_leveldblib'], txnTesterLoader).then(testRunner);
 }
 
 function resetterTo (sink, username) {
@@ -64,7 +64,7 @@ function resetter (sink, username) {
 }
 
 function resettraverser (execlib, sink) {
-  return execlib.loadDependencies('client', ['allex:leveldb:lib'], resettraverserrunner.bind(null, sink));
+  return execlib.loadDependencies('client', ['allex_leveldblib'], resettraverserrunner.bind(null, sink));
 }
 
 function resettraverserrunner (sink, leveldb) {

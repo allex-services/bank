@@ -1,6 +1,6 @@
 loadMochaIntegration('allex_leveldblib');
 describe('Testing query', function () {
-  loadClientSide(['allex:leveldb:lib']);
+  loadClientSide(['allex_leveldblib']);
   findSinkIt({
     sinkname: 'Bank'
   });
