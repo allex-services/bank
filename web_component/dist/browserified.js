@@ -56,6 +56,23 @@ module.exports = {
     type: 'array',
     strongtype: 'Buffer'
   }],
+  partiallyCommitReservation: [{
+    title: 'Reservation ID',
+    type: 'number',
+    strongtype: 'UInt32LE'
+  },{
+    title: 'Reservation control code',
+    type: 'string',
+    strongtype: 'String'
+  },{
+    title: 'Amount to commit',
+    type: 'number',
+    strongtype: 'UInt32LE'
+  },{
+    title: 'Reference',
+    type: 'array',
+    strongtype: 'Buffer'
+  }],
   cancelReservation: [{
     title: 'Reservation ID',
     type: 'number',
