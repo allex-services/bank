@@ -1,6 +1,6 @@
 {
   "name": "allex_bankservice",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "BankService",
   "main": "index.js",
   "scripts": {

@@ -9,6 +9,15 @@ module.exports = {
     type: 'string',
     strongtype: 'String'
   }],
+  purgeAccount: [{
+    title: 'User name',
+    type: 'string',
+    strongtype: 'String'
+  },{
+    title: 'Reference',
+    type: 'array',
+    strongtype: 'Buffer'
+  }],
   charge: [{
     title: 'User name',
     type: 'string',
@@ -17,6 +26,15 @@ module.exports = {
     title: 'Amount',
     type: 'number',
     strongtype: 'Int32LE'
+  },{
+    title: 'Reference',
+    type: 'array',
+    strongtype: 'Buffer'
+  }],
+  emptyAccount: [{
+    title: 'User name',
+    type: 'string',
+    strongtype: 'String'
   },{
     title: 'Reference',
     type: 'array',

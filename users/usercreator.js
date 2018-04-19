@@ -41,8 +41,17 @@ function createUser(execlib, ParentUser, leveldblib) {
     qlib.promise2defer(this.__service.closeAccount(username), defer);
   };
 
+  User.prototype.purgeAccount = function (username, reason, defer) {
+    //qlib.promise2defer(this.__service.kvstorage.get(username), defer);
+    qlib.promise2defer(this.__service.purgeAccount(username, reason), defer);
+  };
+
   User.prototype.charge = function (username, amount, reason, defer) {
     qlib.promise2defer(this.__service.charge(username, amount, reason), defer);
+  };
+
+  User.prototype.emptyAccount = function (username, reason, defer) {
+    qlib.promise2defer(this.__service.emptyAccount(username, reason), defer);
   };
 
   User.prototype.reserve = function (username, amount, reason, defer) {
